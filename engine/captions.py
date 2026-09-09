@@ -163,10 +163,12 @@ def narration_script(scenes, cfg):
         f'Voice: {vo["voice"]}  |  Stability {vo["stability"]}  |  '
         f'Similarity {vo["similarity"]}  |  Style {vo["style"]}  |  '
         f'Speaker Boost {"ON" if vo["speaker_boost"] else "OFF"}\n'
-        f'Upbeat variant: Stability {vo["upbeat_variant"]["stability"]}, '
-        f'Style {vo["upbeat_variant"]["style"]}\n'
-        + "-" * 64 + "\n\n"
     )
+    alt = vo.get("calm_variant") or vo.get("upbeat_variant")
+    if alt:
+        header += (f'Alt read: Stability {alt.get("stability", vo["stability"])}, '
+                   f'Style {alt.get("style", vo["style"])}\n')
+    header += "-" * 64 + "\n\n"
     return header + body + "\n"
 
 
