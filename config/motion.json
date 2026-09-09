@@ -1,0 +1,114 @@
+{
+  "_comment": "Motion system. Rule: a new motion beat at least every 2 seconds. Never linear except continuous spins and ambient particles.",
+  "transitions": {
+    "overlap_s": 0.35,
+    "exit_s": 0.45,
+    "exit_rise_px": 95,
+    "enter_from_px": 75,
+    "sweep_lead_s": 0.12,
+    "sweep_span_s": 0.54,
+    "sweep_width_px": 420,
+    "sweep_alpha": 58
+  },
+  "easing": {
+    "default": "ease_out_quint",
+    "entrance": "back_out",
+    "spring": "spring_out",
+    "continuous": "linear",
+    "back_overshoot": 1.45,
+    "spring_damping": 0.42,
+    "_overshoot_note": "1.45 not 1.70158. Softened during the MOP render so motion settles instead of bouncing. Approved."
+  },
+  "entrance_stagger": {
+    "kicker_ms": 0,
+    "icon_ms": 140,
+    "headline_ms": 300,
+    "card_ms": 480,
+    "accent_bar_wipe_ms": 620,
+    "each_duration_ms": 520
+  },
+  "beats": {
+    "_comment": "Seconds from scene start. Keeps a new beat landing at least every 2s across a 10s scene.",
+    "pulse_ring": [
+      0.0,
+      1.5,
+      3.5,
+      6.0,
+      8.5
+    ],
+    "headline_shine": [
+      2.2,
+      4.4,
+      6.6,
+      8.8
+    ],
+    "icon_spring_bounce": [
+      3.0,
+      5.5,
+      8.0
+    ],
+    "icon_wiggle": [
+      4.5,
+      7.5
+    ],
+    "counter_pop": [
+      3.0,
+      6.0,
+      9.0
+    ]
+  },
+  "continuous": {
+    "icon_float_amplitude_px": 8,
+    "icon_float_period_s": 2.0,
+    "icon_sway_deg": 2.0,
+    "particle_count": 0,
+    "particle_speed_px_s": 0,
+    "particle_opacity": 0.0,
+    "grain_opacity": 0.03,
+    "blob_drift_px": 40,
+    "blob_period_s": 9.0,
+    "_particles_note": "ZERO. Kiian removed particles on four separate approved videos. Never re-enable without him asking.",
+    "ghost_parallax_px": 6,
+    "ghost_scale_max": 1.02,
+    "ghost_period_s": 6.0
+  },
+  "icon_moves": {
+    "_comment": "Per-scene icon behaviour. Pick one in scenes.json via icon_move. Raster morph swaps use spin+scale out/in with a 0.4s cross-dissolve.",
+    "options": [
+      "spin360",
+      "card_flip",
+      "coin_flip",
+      "float_bob",
+      "drop_squash",
+      "orbit",
+      "morph_swap",
+      "pulse_scale"
+    ],
+    "spin360_duration_ms": 900,
+    "flip_duration_ms": 700,
+    "drop_squash_ms": 620,
+    "orbit_period_s": 6.0,
+    "morph_crossfade_ms": 400,
+    "supersample": 3
+  },
+  "shine": {
+    "sweep_duration_ms": 700,
+    "band_width_px": 220,
+    "band_opacity": 0.3,
+    "angle_deg": 18
+  },
+  "pulse_ring": {
+    "duration_ms": 1400,
+    "start_radius_px": 150,
+    "end_radius_px": 330,
+    "start_opacity": 0.3,
+    "stroke_px": 5
+  },
+  "headline": {
+    "letter_stagger_s": 0.03,
+    "letter_duration_s": 0.45,
+    "rise_px": 34,
+    "easing": "ease_out_cubic",
+    "shine_duration_s": 0.8
+  }
+}

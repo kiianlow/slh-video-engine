@@ -1,0 +1,21 @@
+SG LAUNCH HOMES — 5 QUESTIONS TO ASK AT A SHOWFLAT
+ElevenLabs narration script
+
+Voice: Adam  |  Stability 67  |  Similarity 75  |  Style 0  |  Speaker Boost: On
+Paste the block below into ElevenLabs. Break tags control the pauses.
+
+------------------------------------------------------------
+
+Going to a showflat? <break time="0.3s" /> Most people walk in without knowing what to ask. <break time="0.3s" /> Here are five questions that actually matter. <break time="0.7s" />
+
+One. <break time="0.2s" /> The showflat's actual size. <break time="0.3s" /> These units are styled to look bigger than they are. Ask how much space is truly usable, not just the strata area on paper. <break time="0.7s" />
+
+Two. <break time="0.2s" /> What floor is this unit, and what's the price per square foot? <break time="0.3s" /> The showflat is usually a mid-floor unit. P-S-F changes with the level and the facing. <break time="0.7s" />
+
+Three. <break time="0.2s" /> Who is the developer, and what have they built before? <break time="0.3s" /> A beautiful showflat tells you nothing about build quality. Always check their track record. <break time="0.7s" />
+
+Four. <break time="0.2s" /> When is the expected T-O-P date? <break time="0.3s" /> For a new launch, that's usually three to five years away. Make sure that timeline works for your plans. <break time="0.7s" />
+
+Five. <break time="0.2s" /> Is there a deferred payment scheme? <break time="0.3s" /> Some developers let you pay less upfront and settle the rest at T-O-P. Worth asking while you plan your finances. <break time="0.7s" />
+
+Save this before your next showflat visit. <break time="0.3s" /> Follow S-G Launch Homes for more Singapore property tips, <break time="0.2s" /> or message me if you want help before you go.

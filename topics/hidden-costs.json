@@ -1,0 +1,85 @@
+{
+  "title": "Hidden costs buyers forget when buying a condo in Singapore",
+  "platforms": ["instagram", "tiktok", "rednote"],
+  "goal": "lead generation and education",
+  "manychat_keyword": "COSTS",
+
+  "scenes": [
+    {
+      "type": "hook",
+      "icon": "affordability",
+      "icon_move": "drop_squash",
+      "headline": "The price is not the price",
+      "sub": "Five costs buyers forget until it is too late",
+      "narration": "You budgeted for the condo. You did not budget for these five."
+    },
+    {
+      "type": "point",
+      "kicker": "POINT 01",
+      "icon": "card",
+      "icon_move": "card_flip",
+      "headline": "Buyer's stamp duty",
+      "sub": "Payable within 14 days of exercising the OTP",
+      "narration": "Buyer's stamp duty is due within fourteen days of exercising the O-T-P. On a one point five million dollar unit that is roughly forty four thousand dollars, in cash or C-P-F."
+    },
+    {
+      "type": "point",
+      "kicker": "POINT 02",
+      "icon": "otp",
+      "icon_move": "float_bob",
+      "headline": "Legal and conveyancing",
+      "sub": "Two and a half to four thousand, plus disbursements",
+      "narration": "Legal fees run between two and a half and four thousand dollars. Disbursements sit on top of that, and most buyers only see the number at completion."
+    },
+    {
+      "type": "point",
+      "kicker": "POINT 03",
+      "icon": "coin",
+      "icon_move": "coin_flip",
+      "headline": "The cash portion",
+      "sub": "5% must be cash. CPF cannot cover it",
+      "narration": "Five percent of the purchase price has to be cash. C-P-F cannot touch that portion, and it is the number that catches upgraders out most often."
+    },
+    {
+      "type": "point",
+      "kicker": "POINT 04",
+      "icon": "bank",
+      "icon_move": "pulse_scale",
+      "headline": "Bridging the gap",
+      "sub": "Timing between selling and buying costs money",
+      "narration": "If your sale completes after your purchase, you need a bridging loan. For example, three months of bridging on a large sum is not a small line item."
+    },
+    {
+      "type": "point",
+      "kicker": "POINT 05",
+      "icon": "resale",
+      "icon_move": "spin360",
+      "headline": "The move-in bill",
+      "sub": "Renovation, furniture, agent fee, MCST deposit",
+      "narration": "Then comes the move-in bill. Renovation, furniture, the agent fee and the M-C-S-T deposit all land in the same quarter."
+    },
+    {
+      "type": "cta",
+      "icon": "dm",
+      "icon_move": "float_bob",
+      "headline": "Know your real number",
+      "keyword": "COSTS",
+      "sub": "I will send you the full cost breakdown sheet",
+      "narration": "Comment the word costs and I will send you the full breakdown so you can see your real number before you commit."
+    }
+  ],
+
+  "thumbnail": {
+    "lines": ["THE PRICE", "IS NOT", "THE PRICE"],
+    "highlight": [1],
+    "kicker": "SINGAPORE PROPERTY",
+    "cta": "SAVE THIS",
+    "decor": {"kicker": true, "divider": true, "cta": true, "bottom": true, "dots": true}
+  },
+
+  "captions": {
+    "instagram": "The price on the listing is never the price you pay.\n\nMost buyers budget for the unit and forget the five costs that land in the same quarter.\n\nStamp duty is due 14 days after you exercise. The 5% cash portion cannot come from CPF. Then the move-in bill arrives all at once.\n\nKnowing your real number before you commit is the whole game.\n\nComment COSTS and I'll send you the full breakdown sheet.\n\n#singaporeproperty #condosingapore #hdbupgraders #propertyinvestmentsg #SGproperty",
+    "tiktok": "The price on the listing is never the price you pay.\n\nFive costs land in the same quarter and most buyers only budget for one of them.\n\nComment COSTS and I'll send you the full breakdown.\n\n#singaporeproperty #condosg #hdbtocondo #propertysg #SGproperty",
+    "rednote": "标题：买新加坡公寓，成交价之外还要准备多少钱？\n\n很多人只算了房价，却漏掉了同一季度会一起到账的几笔支出。\n\n1. 买方印花税，行使购买权后14天内缴清\n2. 律师费与杂费\n3. 5%必须是现金，公积金不能动\n4. 买卖时间差可能需要过桥贷款\n5. 装修、家具、管理费押金\n\n先算清楚真实数字，再决定要不要出手。\n\n#新加坡房产 #新加坡买房 #新加坡公寓 #新加坡生活 #海外置业"
+  }
+}

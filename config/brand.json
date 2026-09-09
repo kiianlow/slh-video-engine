@@ -1,0 +1,207 @@
+{
+  "_comment": "SINGLE SOURCE OF TRUTH, reconciled against the approved renders (MOP 30-day, Affordability calculator, Resale HDB vs BTO, Capital appreciation, PSF). See docs/APPROVED_BASELINE.md.",
+  "brand": {
+    "handle": "@SGLAUNCHHOMES",
+    "name": "SG LAUNCH HOMES",
+    "cea_number": "CEA No. R011448D",
+    "badge": "assets/brand/slh_badge.png",
+    "whatsapp": "9040 1882"
+  },
+  "canvas": {
+    "width": 1080,
+    "height": 1920,
+    "fps": 60,
+    "draft_fps": 30,
+    "codec": "libx264",
+    "pix_fmt": "yuv420p",
+    "crf": 19,
+    "faststart": true,
+    "preset": "medium",
+    "chunk_frames": 900,
+    "parallel_chunks": 4
+  },
+  "type": {
+    "family": "Nunito Sans",
+    "headline": {
+      "file": "assets/fonts/NunitoSans-Black.ttf",
+      "weight": 900,
+      "line_height": 1.1,
+      "tracking": 0.01,
+      "use": "headlines, titles, hooks, CTAs, lower thirds, counters, burned captions"
+    },
+    "body": {
+      "file": "assets/fonts/NunitoSans-Light.ttf",
+      "weight": 300,
+      "line_height": 1.4,
+      "tracking": 0.0,
+      "use": "captions, sub-text, descriptions, handle, fine print"
+    },
+    "_note": "Nunito Sans is installed in the repo as static instances cut from the official variable font. Poppins substitution is retired. Do not substitute."
+  },
+  "palette": {
+    "video": {
+      "bg": "#E8E0D0",
+      "ink": "#3D2B1F",
+      "secondary": "#5C3D2E",
+      "card": "#F4F0E8",
+      "handle": "#8B6355",
+      "cream": "#FAF6EC",
+      "track": "#CEC2B0"
+    },
+    "thumbnail": {
+      "bg": "#F5E5D3",
+      "ink": "#4E3321",
+      "accent": "#B87A4C"
+    },
+    "accent_rotation": [
+      {
+        "name": "terracotta",
+        "hex": "#C07B4F"
+      },
+      {
+        "name": "dusty_blue",
+        "hex": "#6E8CA8"
+      },
+      {
+        "name": "gold",
+        "hex": "#C7A24B"
+      },
+      {
+        "name": "sage",
+        "hex": "#8A9A6B"
+      },
+      {
+        "name": "teal",
+        "hex": "#5E8C86"
+      }
+    ],
+    "forbidden": [
+      "#FF0000",
+      "any red"
+    ],
+    "_rule": "NO RED ANYWHERE. One accent per scene, taken in order from accent_rotation."
+  },
+  "layout": {
+    "safe_top": 250,
+    "handle_top_y": 104,
+    "handle_bottom_y": 1838,
+    "kicker_x": 90,
+    "kicker_y": 252,
+    "icon_cx": 840,
+    "icon_cy": 366,
+    "icon_size": 252,
+    "icon_cx_center": 540,
+    "icon_cy_center": 366,
+    "headline_y": 560,
+    "headline_size": 102,
+    "subtext_x": 120,
+    "subtext_y": 652,
+    "subtext_size": 36,
+    "accent_wipe": [
+      90,
+      628,
+      100,
+      676
+    ],
+    "ghost_cy": 598,
+    "ghost_size": 520,
+    "ghost_alpha": 0.09,
+    "caption_y_factor": 0.58,
+    "progress_y": 1742,
+    "progress_x0": 90,
+    "progress_x1": 990,
+    "progress_gap": 12,
+    "progress_h": 7,
+    "content_max_y": 1050,
+    "side_margin": 90,
+    "_rule": "Scene graphics must bottom out ABOVE content_max_y (1050). Burned captions are centred at caption_y_factor (0.58H = 1114). handle_top_y / handle_bottom_y frame the scene. Point scenes place the icon at icon_cx/icon_cy; hook and CTA use icon_cx_center."
+  },
+  "duration": {
+    "hook_s": 4,
+    "scene_s": 10,
+    "cta_s": 6,
+    "_model": "hook 4s + N content scenes at 10s + CTA 6s. Five content scenes = 60s. No-CTA videos run a longer hook and absorb the 6s into the scenes."
+  },
+  "audio": {
+    "bg_music": "assets/audio/lofi_bg.mp3",
+    "bg_music_volume": 0.1,
+    "_volume_note": "10 out of 100 in CapCut = linear gain 0.10. Locked. Ducking under narration is on top of this.",
+    "narration_volume": 1.0,
+    "fade_in_s": 0.5,
+    "fade_out_s": 1.5
+  },
+  "voiceover": {
+    "provider": "ElevenLabs",
+    "voice": "George",
+    "stability": 45,
+    "similarity": 80,
+    "style": 20,
+    "speaker_boost": true,
+    "acronym_rule": "hyphenate for clean read: C-P-F, A-B-S-D, T-D-S-R, P-S-F, T-O-P, H-D-B, B-T-O",
+    "break_tags": {
+      "between_scenes": "0.6s",
+      "inline_beat": "0.3s"
+    },
+    "_note": "45/80/20 is what the last two approved videos used. The older 55/80/5 is kept below for the calmer read.",
+    "calm_variant": {
+      "stability": 55,
+      "style": 5
+    }
+  },
+  "captions_burned": {
+    "enabled": true,
+    "style": "word_by_word",
+    "font": "headline",
+    "case": "upper",
+    "color": "#FFFFFF",
+    "size": 68,
+    "min_size": 56,
+    "max_width": 930,
+    "shadow": {
+      "color": "#463428",
+      "opacity": 0.37,
+      "blur": 9,
+      "offset": [
+        0,
+        5
+      ]
+    },
+    "pop_in_ms": 120,
+    "pop_from": 0.72,
+    "_note": "Approved treatment: warm brown soft shadow, no hard outline, back-out pop. Centred on 0.58H."
+  },
+  "social_captions": {
+    "hashtag_count": 5,
+    "never_use": [
+      "#sglaunchhomes"
+    ],
+    "instagram": [
+      "#singaporeproperty",
+      "#condosingapore",
+      "#hdbupgraders",
+      "#propertyinvestmentsg",
+      "#SGproperty"
+    ],
+    "tiktok": [
+      "#singaporeproperty",
+      "#condosg",
+      "#hdbtocondo",
+      "#propertysg",
+      "#SGproperty"
+    ],
+    "tiktok_anchor": "#SGproperty",
+    "rednote": {
+      "cta": false,
+      "manychat": false,
+      "dm_invite": false,
+      "hashtags_lang": "zh",
+      "open_with": "question-style headline"
+    },
+    "manychat": {
+      "instagram": true,
+      "tiktok": true,
+      "rednote": false
+    },
+    "voice": "first person agent; 'for example' framing on illustrative figures; hook + reframe only, no point-by-point number breakdowns"
+  }
+}
