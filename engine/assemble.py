@@ -94,3 +94,44 @@ def probe(path):
          "-show_entries", "format=duration,size", "-of", "json", path],
         capture_output=True, text=True)
     return json.loads(p.stdout)
+
+
+def append_outro(video, out_path, cfg, repo_root):
+    """Concat the branded outro onto the finished video.
+
+    The clip ships at 30fps; it is conformed to the render fps, pixel format
+    and audio layout first, otherwise the join stutters and some players drop
+    the outro audio entirely.
+    """
+    o = cfg.get("outro", {})
+    if not o.get("enabled"):
+        return video
+    src = os.path.join(repo_root, o["file"])
+    if not os.path.exists(src):
+        return video
+
+    c = cfg["canvas"]
+    conformed = os.path.join(os.path.dirname(out_path), "_outro_conformed.mp4")
+    _run([
+        "ffmpeg", "-y", "-i", src,
+        "-vf", f"scale={c['width']}:{c['height']}:flags=lanczos,fps={c['fps']},format={c['pix_fmt']}",
+        "-c:v", c["codec"], "-crf", str(c["crf"]), "-preset", "medium",
+        "-c:a", "aac", "-b:a", "192k", "-ar", "44100", "-ac", "2",
+        conformed,
+    ])
+
+    lst = os.path.join(os.path.dirname(out_path), "_concat.txt")
+    with open(lst, "w") as f:
+        f.write(f"file '{os.path.abspath(video)}'\n")
+        f.write(f"file '{os.path.abspath(conformed)}'\n")
+
+    _run(["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", lst,
+          "-c:v", c["codec"], "-crf", str(c["crf"]), "-preset", "medium",
+          "-pix_fmt", c["pix_fmt"], "-c:a", "aac", "-b:a", "192k",
+          "-movflags", "+faststart", out_path])
+    for p in (conformed, lst):
+        try:
+            os.remove(p)
+        except OSError:
+            pass
+    return out_path

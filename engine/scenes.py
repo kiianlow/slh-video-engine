@@ -483,9 +483,58 @@ def _draw_cta(img, repo_root, cfg, mcfg, scene, t_local, accent):
                                      cea, font=cf, fill=ink + (150,)))
 
 
+def _draw_recap(img, repo_root, cfg, mcfg, scene, t_local, accent, points):
+    """Closing summary. The points come back as a short checklist so the video
+    lands instead of stopping dead when the last explanation finishes."""
+    L = cfg["layout"]
+    W = img.size[0]
+    M = L["side_margin"]
+    ink = mo.hex_to_rgb(cfg["palette"]["video"]["ink"])
+    a = mo.hex_to_rgb(accent)
+    probe = ImageDraw.Draw(img)
+
+    head = scene.get("headline", "The short version").upper()
+    hp = max(0.0, mo.window(t_local, 0.15, 620, "ease_out_quint"))
+    hf = fit_text(probe, head, repo_root, cfg, "headline", W - 2 * M, 78, 46)
+    hw, _ = text_size(probe, head, hf)
+    img = _ov(img, lambda d: d.text((M - (1 - hp) * 40, 300), head, font=hf,
+                                    fill=ink + (int(255 * hp),)))
+
+    uw = max(0.0, min(1.0, mo.window(t_local, 0.35, 620, "ease_out_quint")))
+    img = _ov(img, lambda d: d.rounded_rectangle(
+        [M, 300 + hf.size + 22, M + hw * uw, 300 + hf.size + 29], radius=4, fill=a + (215,)))
+
+    lf = font(repo_root, cfg, "body", 42)
+    y = 300 + hf.size + 76
+    rows = points[:6]
+    probe = ImageDraw.Draw(img)
+    for i, txt in enumerate(rows):
+        p = max(0.0, min(1.0, mo.window(t_local, 0.7 + i * 0.42, 560, "ease_out_quint")))
+        if p <= 0:
+            continue
+        lines = wrap(probe, txt, lf, W - M - 150)
+        yy = y
+
+        def paint(d, p=p, yy=yy, lines=lines, i=i):
+            cy = yy + 20
+            r = 13 * p
+            d.ellipse([M + 6 - r, cy - r, M + 6 + r, cy + r], fill=a + (int(235 * p),))
+            if p > 0.55:
+                d.line([(M - 1, cy + 1), (M + 4, cy + 6), (M + 13, cy - 5)],
+                       fill=(255, 255, 255, 255), width=3)
+            ty = yy
+            for ln in lines:
+                d.text((M + 46 + (1 - p) * 26, ty), ln, font=lf,
+                       fill=ink + (int(240 * p),))
+                ty += int(42 * 1.35)
+        img = _ov(img, paint)
+        y += int(42 * 1.35) * len(lines) + 26
+    return img
+
+
 # ------------------------------------------------------------------ entry ---
 
-def render_frame(repo_root, cfg, mcfg, scene, t_local, t_global, idx, total):
+def render_frame(repo_root, cfg, mcfg, scene, t_local, t_global, idx, total, points=None):
     W, H = cfg["canvas"]["width"], cfg["canvas"]["height"]
     accent = scene["accent"]
 
@@ -503,6 +552,8 @@ def render_frame(repo_root, cfg, mcfg, scene, t_local, t_global, idx, total):
     kind = scene.get("type", "point")
     if kind == "hook":
         img = _draw_hook(img, repo_root, cfg, mcfg, scene, t_local, accent)
+    elif kind == "recap":
+        img = _draw_recap(img, repo_root, cfg, mcfg, scene, t_local, accent, points or [])
     elif kind == "cta":
         img = _draw_cta(img, repo_root, cfg, mcfg, scene, t_local, accent)
     else:
