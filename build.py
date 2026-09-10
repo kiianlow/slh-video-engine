@@ -23,7 +23,8 @@ from PIL import Image  # noqa: E402
 
 import assemble  # noqa: E402
 import icons  # noqa: E402
-from captions import CaptionTrack, narration_script  # noqa: E402
+import audio_align  # noqa: E402
+from captions import CaptionTrack, narration_script, write_srt  # noqa: E402
 from scenes import render_frame  # noqa: E402
 from thumbnail import render_thumbnail  # noqa: E402
 
@@ -104,12 +105,23 @@ def do_full(args, cfg, mcfg, topic, scenes):
     os.makedirs(frames, exist_ok=True)
 
     align = args.alignment or os.path.join(work, "alignment.json")
+    narr = args.narration or os.path.join(work, "narration.mp3")
+
     if os.path.exists(align):
         track = CaptionTrack.from_elevenlabs(align)
         src = "ElevenLabs word alignment (exact)"
+    elif os.path.exists(narr):
+        # Time the whole video to the real recording. Scene durations are
+        # rewritten in place, so the render comes out the same length as the
+        # audio and needs no cutting in CapCut.
+        _, adur, warn = audio_align.build_alignment(narr, scenes, align)
+        track = CaptionTrack.from_elevenlabs(align)
+        src = f"silence-detected from narration.mp3 ({adur:.2f}s)"
+        if warn:
+            print(f"  ! {warn}", flush=True)
     else:
         track = CaptionTrack.from_scenes(scenes)
-        src = "auto-distributed from script (APPROXIMATE)"
+        src = "auto-distributed from script (APPROXIMATE - no narration.mp3)"
 
     dur = total_duration(scenes)
     n = int(round(dur * fps))
@@ -129,11 +141,13 @@ def do_full(args, cfg, mcfg, topic, scenes):
     assemble.encode_frames(frames, silent, cfg, fps=fps)
     print(f"[encode] {silent}", flush=True)
 
-    narr = args.narration or os.path.join(work, "narration.mp3")
     final = os.path.join(work, f"{args.topic}.mp4")
     assemble.mux_audio(silent, final, cfg, ROOT,
                        narration=narr if os.path.exists(narr) else None,
                        music=not args.no_music)
+    srt = os.path.join(work, f"{args.topic}.srt")
+    write_srt(track, srt)
+    print(f"[srt   ] {srt}", flush=True)
     print(f"[final ] {final}", flush=True)
     return final, track
 

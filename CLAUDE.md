@@ -54,19 +54,26 @@ Patch `topics/<slug>.json`, then re-render only what changed:
 python build.py --topic <slug> --preview --frames 3 5
 ```
 
-**Message 3** is approval. Then:
+**Message 3** is approval. Then hand over `narration_script.txt` and STOP.
+Do not render yet, and do not touch the ElevenLabs connector -- it returns a
+canvas URL, not a file this pipeline can use, and no word alignment.
 
-1. **Do NOT touch the ElevenLabs connector.** Kiian records the voiceover
-   himself in the ElevenLabs app. The connector generates onto their canvas
-   and returns a URL, not a file this pipeline can read, and it returns no
-   word-alignment JSON. Calling it burns credits and minutes for nothing.
-   Hand him `narration_script.txt` and move on.
-2. `setsid python build.py --topic <slug> --full > output/<slug>/render.log 2>&1 &`
-3. Poll the log. Present the finished bundle.
+**Message 4** is Kiian returning with `narration.mp3`. Save it to
+`output/<slug>/narration.mp3`, then:
 
-If he later drops `narration.mp3` and/or `alignment.json` into
-`output/<slug>/`, re-run `--full`. With alignment the caption timing is exact;
-without it the build prints an APPROXIMATE warning and he syncs in CapCut.
+    setsid python build.py --topic <slug> --full > output/<slug>/render.log 2>&1 &
+
+`audio_align.py` silence-detects the `<break>` gaps in the recording, rewrites
+every scene duration to the real spoken length, and times the burned captions
+to his actual delivery. The MP4 comes out the same length as the audio, so it
+drops on the CapCut timeline at 0:00 with no cutting.
+
+**The breaks are load-bearing.** The pasted script must keep its
+`<break time="0.6s" />` tags between scenes. Without them there are no gaps to
+detect and timing falls back to guessing.
+
+Rendering before the MP3 exists still works, but captions are approximate and
+the build says so. Only do that if he explicitly asks for a preview render.
 
 At the end of the session, hand him any engine files you changed plus a commit
 message. You cannot push. If the improvement is not committed it dies here.
