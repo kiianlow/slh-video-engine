@@ -123,6 +123,13 @@ the end of a run. Never let a missing file stop a deliverable.
 - `<break time="0.6s" />` between scenes, `0.3s` for an inline beat.
 - Pace: hook about 4s, each point 9-10s, CTA about 6s.
 
+## Voice
+
+Hope - upbeat and clear, Eleven Multilingual v2, Speed at maximum, Stability 50,
+Similarity 75, Style 0, Speaker Boost on, MP3 44.1 kHz. Read off Kiian's actual
+panel, not guessed. `narration_script.txt` prints these at the top of every
+script so he never has to remember them.
+
 ## Audio
 
 Background bed is `assets/audio/lofi_bg.mp3` at gain **0.10** — volume 10 out
