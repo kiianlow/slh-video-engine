@@ -161,6 +161,111 @@
       "fallback": "chat",
       "palette": "chat",
       "use": "DM me, comment the keyword, CTA scene"
+    },
+    "clock": {
+      "file": "slh/clock.png",
+      "red": false,
+      "fallback": "house",
+      "palette": "default",
+      "use": "timelines, MOP countdown, TOP dates, holding period"
+    },
+    "calendar": {
+      "file": "slh/calendar.png",
+      "red": false,
+      "fallback": "house",
+      "palette": "default",
+      "use": "launch dates, application windows, deadlines"
+    },
+    "lock": {
+      "file": "slh/lock.png",
+      "red": false,
+      "fallback": "house",
+      "palette": "default",
+      "use": "lock-in periods, MOP restriction, fixed rates"
+    },
+    "mrt": {
+      "file": "slh/mrt.png",
+      "red": false,
+      "fallback": "house",
+      "palette": "default",
+      "use": "transport links, MRT proximity, connectivity"
+    },
+    "school": {
+      "file": "slh/school.png",
+      "red": false,
+      "fallback": "house",
+      "palette": "default",
+      "use": "school proximity, 1km rule, family planning"
+    },
+    "location": {
+      "file": "slh/location.png",
+      "red": false,
+      "fallback": "house",
+      "palette": "default",
+      "use": "district guides, area comparisons, where to buy"
+    },
+    "compare": {
+      "file": "slh/compare.png",
+      "red": false,
+      "fallback": "house",
+      "palette": "default",
+      "use": "A vs B decisions, resale vs BTO, trade-offs"
+    },
+    "shield": {
+      "file": "slh/shield.png",
+      "red": false,
+      "fallback": "house",
+      "palette": "default",
+      "use": "safe bets, insurance, downside protection"
+    },
+    "family": {
+      "file": "slh/family.png",
+      "red": false,
+      "fallback": "house",
+      "palette": "default",
+      "use": "young couples, families, multi-gen living"
+    },
+    "briefcase": {
+      "file": "slh/briefcase.png",
+      "red": false,
+      "fallback": "house",
+      "palette": "default",
+      "use": "income, employment, loan assessment"
+    },
+    "park": {
+      "file": "slh/park.png",
+      "red": false,
+      "fallback": "house",
+      "palette": "default",
+      "use": "greenery, lifestyle, amenities nearby"
+    },
+    "portfolio": {
+      "file": "slh/portfolio.png",
+      "red": false,
+      "fallback": "house",
+      "palette": "default",
+      "use": "asset allocation, diversification, holdings"
+    },
+    "best": {
+      "file": "slh/best.png",
+      "red": false,
+      "fallback": "house",
+      "palette": "default",
+      "use": "top pick, best performer, winner"
+    },
+    "tip": {
+      "file": "slh/tip.png",
+      "red": false,
+      "fallback": "house",
+      "palette": "default",
+      "use": "insight, pro tip, the thing people miss"
+    },
+    "search": {
+      "file": "slh/search.png",
+      "red": false,
+      "fallback": "house",
+      "palette": "default",
+      "use": "viewing, research, due diligence"
     }
   }
 }
