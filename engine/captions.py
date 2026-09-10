@@ -159,6 +159,8 @@ def narration_script(scenes, cfg):
             line = line.replace(k, v)
         out.append(line)
     body = f'\n<break time="{vo["break_tags"]["between_scenes"]}" />\n'.join(out)
+    # The break between scenes is load-bearing: build.py silence-detects it to
+    # time the video to the recording. Do not remove it from the pasted script.
     header = (
         f'Voice: {vo["voice"]}  |  Stability {vo["stability"]}  |  '
         f'Similarity {vo["similarity"]}  |  Style {vo["style"]}  |  '
@@ -168,6 +170,11 @@ def narration_script(scenes, cfg):
     if alt:
         header += (f'Alt read: Stability {alt.get("stability", vo["stability"])}, '
                    f'Style {alt.get("style", vo["style"])}\n')
+    header += (
+        "\nPaste everything below the line into ElevenLabs exactly as it is.\n"
+        "Do not delete the <break> tags -- the build reads them to sync the\n"
+        "captions to your delivery. Save the result as narration.mp3.\n"
+    )
     header += "-" * 64 + "\n\n"
     return header + body + "\n"
 
