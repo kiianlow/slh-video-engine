@@ -40,6 +40,15 @@ def load_topic(slug):
         return json.load(f)
 
 
+def recap_points(topic, scenes):
+    """Headlines of the content scenes, for the closing checklist."""
+    custom = topic.get("recap_points")
+    if custom:
+        return custom
+    return [sc.get("sub") or sc.get("headline", "")
+            for sc in scenes if sc.get("type", "point") == "point"]
+
+
 def prepare(topic, cfg):
     """Fill in durations and accents so scenes.json stays minimal to write."""
     d = cfg["duration"]
@@ -47,7 +56,8 @@ def prepare(topic, cfg):
     scenes = topic["scenes"]
     for i, sc in enumerate(scenes):
         if "duration" not in sc:
-            sc["duration"] = {"hook": d["hook_s"], "cta": d["cta_s"]}.get(
+            sc["duration"] = {"hook": d["hook_s"], "cta": d["cta_s"],
+                              "recap": d.get("recap_s", 5)}.get(
                 sc.get("type", "point"), d["scene_s"])
         if "accent" not in sc:
             sc["accent"] = rot[i % len(rot)]["hex"]
@@ -78,6 +88,7 @@ def point_index(scenes, i):
 # ---------------------------------------------------------------- actions ---
 
 def do_preview(args, cfg, mcfg, topic, scenes):
+    pts = recap_points(topic, scenes)
     out = os.path.join(ROOT, "output", args.topic, "preview")
     os.makedirs(out, exist_ok=True)
     want = set(args.frames) if args.frames else None
@@ -88,7 +99,7 @@ def do_preview(args, cfg, mcfg, topic, scenes):
         if want is None or (i + 1) in want:
             t_local = min(sc["duration"] * 0.55, sc["duration"] - 0.1)
             img = render_frame(ROOT, cfg, mcfg, sc, t_local, clock + t_local,
-                               point_index(scenes, i), total)
+                               point_index(scenes, i), total, points=pts)
             p = os.path.join(out, f"scene_{i + 1:02d}_{sc.get('type', 'point')}.png")
             img.convert("RGB").save(p)
             made.append(p)
@@ -123,6 +134,7 @@ def do_full(args, cfg, mcfg, topic, scenes):
         track = CaptionTrack.from_scenes(scenes)
         src = "auto-distributed from script (APPROXIMATE - no narration.mp3)"
 
+    pts = recap_points(topic, scenes)
     dur = total_duration(scenes)
     n = int(round(dur * fps))
     total = content_count(scenes)
@@ -131,7 +143,8 @@ def do_full(args, cfg, mcfg, topic, scenes):
     for f in range(n):
         t = f / fps
         i, sc, t_local = scene_at(scenes, t)
-        img = render_frame(ROOT, cfg, mcfg, sc, t_local, t, point_index(scenes, i), total)
+        img = render_frame(ROOT, cfg, mcfg, sc, t_local, t, point_index(scenes, i),
+                           total, points=pts)
         img = track.draw(img, ROOT, cfg, t)
         img.convert("RGB").save(os.path.join(frames, f"f_{f:06d}.png"))
         if f % 300 == 0:
@@ -145,6 +158,13 @@ def do_full(args, cfg, mcfg, topic, scenes):
     assemble.mux_audio(silent, final, cfg, ROOT,
                        narration=narr if os.path.exists(narr) else None,
                        music=not args.no_music)
+    if cfg.get("outro", {}).get("enabled"):
+        with_outro = os.path.join(work, f"{args.topic}_full.mp4")
+        assemble.append_outro(final, with_outro, cfg, ROOT)
+        if os.path.exists(with_outro):
+            os.replace(with_outro, final)
+            print("[outro ] appended", flush=True)
+
     srt = os.path.join(work, f"{args.topic}.srt")
     write_srt(track, srt)
     print(f"[srt   ] {srt}", flush=True)
@@ -174,11 +194,20 @@ def do_captions(args, cfg, topic, scenes):
     with open(p, "w") as f:
         f.write(narration_script(scenes, cfg))
     c = topic.get("captions")
-    cp = None
-    if c:
-        cp = os.path.join(work, "captions.md")
-        with open(cp, "w") as f:
-            f.write(f"# {topic.get('title', args.topic)}\n\n")
+    cp = os.path.join(work, "captions.md")
+    tn = topic.get("thumbnail", {})
+    with open(cp, "w") as f:
+        f.write(f"# {topic.get('title', args.topic)}\n\n")
+        lines = tn.get("lines", [])
+        if lines:
+            hl = set(tn.get("highlight", [1]))
+            f.write("## THUMBNAIL TITLE\n\n")
+            f.write("Paste into the HTML thumbnail generator, one line per field.\n\n")
+            for i, ln in enumerate(lines):
+                mark = "   <- highlight this line" if i in hl else ""
+                f.write(f"Line {i + 1}: {ln}{mark}\n")
+            f.write(f"\nCTA pill: {tn.get('cta', 'SAVE THIS')}\n\n")
+        if c:
             for platform in ("instagram", "tiktok", "rednote"):
                 if platform in c:
                     f.write(f"## {platform.upper()}\n\n{c[platform].strip()}\n\n")
@@ -218,7 +247,7 @@ def main():
         print("script:", a)
         if b:
             print("captions:", b)
-    if args.thumbnail or args.all:
+    if args.thumbnail:
         print("thumbnail:", do_thumbnail(args, cfg, topic))
     if args.full or args.all:
         final, track = do_full(args, cfg, mcfg, topic, scenes)

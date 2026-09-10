@@ -80,6 +80,28 @@ message. You cannot push. If the improvement is not committed it dies here.
 
 ---
 
+## Deliverables, exactly three
+
+1. `<slug>.mp4` — the video, with the branded outro already on the end
+2. `captions.md` — thumbnail title lines first, then IG / TikTok / RedNote
+3. the thumbnail title inside that file
+
+Do NOT render a thumbnail PNG. Kiian makes those himself in his HTML
+generator. `captions.md` gives him the exact lines to paste and which one to
+highlight. `--thumbnail` still exists if he ever asks for it directly.
+
+## Every video ends with the outro
+
+`assets/video/outro.mp4`, 5 seconds, appended automatically by
+`assemble.append_outro`. Never leave it off, and never end a video on the last
+explanation — that lands abruptly. Structure is:
+
+    hook -> content scenes -> recap -> CTA -> outro
+
+The `recap` scene type replays the content scenes as a short checklist so the
+video closes properly. Narration covers everything up to the CTA; the outro
+carries its own audio.
+
 ## Hard rules
 
 **No red anywhere.** Six icons in the pack contain red. `icons.py` recolours
