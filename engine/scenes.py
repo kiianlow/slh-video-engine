@@ -62,18 +62,22 @@ def _background(cfg, mcfg, W, H, t_global, accent):
     bg = mo.hex_to_rgb(cfg["palette"]["video"]["bg"])
     img = Image.new("RGBA", (W, H), bg + (255,))
 
-    # slow drifting blobs, barely there
-    blob = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    # Slow drifting blobs, drawn at quarter scale. A 120px gaussian on a full
+    # 1080x1920 was the most expensive call in the renderer; a 30px gaussian on
+    # 270x480 is the same picture, since the blobs are soft gradient with no
+    # detail to lose.
+    qw, qh = W // 4, H // 4
+    blob = Image.new("RGBA", (qw, qh), (0, 0, 0, 0))
     bd = ImageDraw.Draw(blob)
     per = mcfg["continuous"]["blob_period_s"]
-    dr = mcfg["continuous"]["blob_drift_px"]
+    dr = mcfg["continuous"]["blob_drift_px"] / 4
     a = mo.hex_to_rgb(accent)
     for i, (cx, cy, r) in enumerate([(0.20, 0.22, 0.46), (0.86, 0.60, 0.38), (0.44, 0.90, 0.34)]):
         dx = dr * math.sin((t_global / per + i * 0.33) * math.tau)
         dy = dr * math.cos((t_global / per + i * 0.21) * math.tau)
-        x, y, rr = cx * W + dx, cy * H + dy, r * W
+        x, y, rr = cx * qw + dx, cy * qh + dy, r * qw
         bd.ellipse([x - rr, y - rr, x + rr, y + rr], fill=a + (10,))
-    blob = blob.filter(ImageFilter.GaussianBlur(120))
+    blob = blob.filter(ImageFilter.GaussianBlur(30)).resize((W, H), Image.BILINEAR)
     img = Image.alpha_composite(img, blob)
     return img
 
@@ -94,18 +98,32 @@ def _particles(cfg, mcfg, W, H, t_global, accent):
     return layer
 
 
+_GRAIN_CACHE = {}
+
+
 def _grain(W, H, mcfg, t_global):
-    import random
-    op = mcfg["continuous"]["grain_opacity"]
+    """Film grain, precomputed.
+
+    This ran random.randint 32,400 times per frame, a quarter of the whole
+    render. Sixteen tiles are built once with numpy and cycled; at 60fps the
+    loop is invisible.
+    """
+    op = mcfg["continuous"].get("grain_opacity", 0)
     if op <= 0:
         return None
-    rnd = random.Random(int(t_global * 12) % 997)
-    small = Image.new("L", (W // 8, H // 8))
-    small.putdata([rnd.randint(0, 255) for _ in range(small.width * small.height)])
-    g = small.resize((W, H), Image.BILINEAR)
-    layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    layer.putalpha(g.point(lambda v: int(v * op)))
-    return layer
+    key = (W, H, round(op, 4))
+    if key not in _GRAIN_CACHE:
+        import numpy as np
+        rng = np.random.default_rng(7)
+        tiles = []
+        for _ in range(16):
+            n = rng.integers(0, 256, size=(H // 8, W // 8)).astype("uint8")
+            g = Image.fromarray(n, "L").resize((W, H), Image.BILINEAR)
+            layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+            layer.putalpha(g.point(lambda v: int(v * op)))
+            tiles.append(layer)
+        _GRAIN_CACHE[key] = tiles
+    return _GRAIN_CACHE[key][int(t_global * 12) % 16]
 
 
 # ----------------------------------------------------------------- chrome ---
@@ -213,6 +231,37 @@ def _icon_badge(repo_root, cfg, mcfg, scene, t_local, accent, size=300):
             scale *= 1 + 0.10 * math.sin(q * math.pi)
     elif move == "pulse_scale":
         scale *= 1 + 0.05 * math.sin(t_local * 2.4)
+    elif move == "swing_in":
+        p = mo.window(t_local, 0.1, im.get("swing_ms", 820), "ease_out_cubic")
+        if 0 < p < 1:
+            rot += 26 * (1 - p) * math.cos(p * math.pi * 2.4)
+    elif move == "zoom_punch":
+        for b in (0.35, 3.2, 6.4):
+            p = mo.window(t_local, b, im.get("punch_ms", 420), "ease_out_quint")
+            if 0 < p < 1:
+                scale *= 1 + 0.22 * (1 - p)
+    elif move == "tilt_shake":
+        for b in (0.4, 3.6, 7.0):
+            p = mo.window(t_local, b, im.get("shake_ms", 560), "ease_out_cubic")
+            if 0 < p < 1:
+                rot += 13 * (1 - p) * math.sin(p * math.pi * 4)
+    elif move == "pendulum":
+        rot += im.get("pendulum_deg", 11) * math.sin(
+            (t_local / im.get("pendulum_period_s", 2.6)) * math.tau)
+    elif move == "heartbeat":
+        ph = (t_local % im.get("heartbeat_period_s", 1.9)) / im.get("heartbeat_period_s", 1.9)
+        if ph < 0.16:
+            scale *= 1 + 0.13 * math.sin(ph / 0.16 * math.pi)
+        elif ph < 0.32:
+            scale *= 1 + 0.07 * math.sin((ph - 0.16) / 0.16 * math.pi)
+    elif move == "barrel_roll":
+        p = mo.window(t_local, 0.6, im.get("barrel_ms", 1500), "ease_in_out_cubic")
+        if 0 < p < 1:
+            rot += 360 * p
+            scale *= 1 + 0.10 * math.sin(p * math.pi)
+    elif move == "rise_glow":
+        p = mo.window(t_local, 0.15, 900, "ease_out_quint")
+        bob += mo.lerp(120, 0, max(0.0, min(1.0, p)))
 
     entrance = mo.window(t_local, mcfg["entrance_stagger"]["icon_ms"] / 1000.0,
                          mcfg["entrance_stagger"]["each_duration_ms"], "back_out")
@@ -540,14 +589,10 @@ def render_frame(repo_root, cfg, mcfg, scene, t_local, t_global, idx, total, poi
 
     img = _background(cfg, mcfg, W, H, t_global, accent)
 
-    # Flat plate over the caption band so burned captions never sit on top of
-    # drifting blobs, grain or scene art. Painted before anything else draws.
-    cz = cfg["layout"].get("caption_clear_zone")
-    if cz:
-        bgc = mo.hex_to_rgb(cfg["palette"]["video"]["bg"])
-        plate = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-        ImageDraw.Draw(plate).rectangle([0, cz[0], W, cz[1]], fill=bgc + (255,))
-        img = Image.alpha_composite(img, plate)
+    # No plate here. Painting flat brand colour over the band hid the drifting
+    # blobs and left a visible rectangle edge against the rest of the frame.
+    # The ambient layers now run continuously through the band; scene art is
+    # kept out of it by layout.content_max_y and captions carry their own shadow.
 
     kind = scene.get("type", "point")
     if kind == "hook":
@@ -566,3 +611,67 @@ def render_frame(repo_root, cfg, mcfg, scene, t_local, t_global, idx, total, poi
     if g is not None:
         img = Image.alpha_composite(img, g)
     return img
+
+
+# ------------------------------------------------------------ transitions ---
+
+def transition(prev_img, next_img, p, mcfg, style="push_up"):
+    """Blend two rendered scenes. p runs 0 -> 1 across the overlap.
+
+    Scenes used to hard-cut, which is a large part of why every video felt the
+    same. Styles are rotated per boundary by build.py.
+    """
+    W, H = prev_img.size
+    e = mo.ease("ease_out_quint", max(0.0, min(1.0, p)))
+    canvas = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+
+    def faded(im, alpha):
+        c = im.copy()
+        c.putalpha(c.getchannel("A").point(lambda v: int(v * alpha)))
+        return c
+
+    if style == "wipe_across":
+        canvas.alpha_composite(prev_img, (0, 0))
+        cut = int(W * e)
+        if cut > 0:
+            canvas.alpha_composite(next_img.crop((0, 0, cut, H)), (0, 0))
+            edge = Image.new("RGBA", (max(2, int(W * 0.05)), H), (255, 255, 255, 46))
+            canvas.alpha_composite(edge.filter(ImageFilter.GaussianBlur(24)),
+                                   (max(0, cut - edge.width // 2), 0))
+        return canvas
+
+    if style == "zoom_through":
+        z = 1 + 0.14 * e
+        pw, ph = int(W * z), int(H * z)
+        canvas.alpha_composite(faded(prev_img.resize((pw, ph), Image.BILINEAR), 1 - e),
+                               (-(pw - W) // 2, -(ph - H) // 2))
+        z2 = 1.16 - 0.16 * e
+        nw, nh = int(W * z2), int(H * z2)
+        canvas.alpha_composite(faded(next_img.resize((nw, nh), Image.BILINEAR), e),
+                               (-(nw - W) // 2, -(nh - H) // 2))
+        return canvas
+
+    if style == "slide_side":
+        canvas.alpha_composite(prev_img, (int(-W * e * 0.35), 0))
+        canvas.alpha_composite(faded(next_img, min(1.0, e * 1.4)), (int(W * (1 - e)), 0))
+        return canvas
+
+    if style == "dissolve_glow":
+        canvas.alpha_composite(faded(prev_img, 1 - e), (0, 0))
+        canvas.alpha_composite(faded(next_img, e), (0, 0))
+        g = math.sin(e * math.pi)
+        if g > 0.02:
+            flash = Image.new("RGBA", (W, H), (255, 255, 255, int(38 * g)))
+            canvas = Image.alpha_composite(canvas, flash)
+        return canvas
+
+    # push_up, the default
+    canvas.alpha_composite(faded(prev_img, 1 - e), (0, int(-95 * e)))
+    canvas.alpha_composite(faded(next_img, e), (0, int(75 * (1 - e))))
+    bw = 420
+    x = mo.lerp(-bw, W + bw, e)
+    sweep = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    off = H * 0.22
+    ImageDraw.Draw(sweep).polygon(
+        [(x, 0), (x + bw, 0), (x + bw - off, H), (x - off, H)], fill=(255, 255, 255, 44))
+    return Image.alpha_composite(canvas, sweep.filter(ImageFilter.GaussianBlur(40)))
