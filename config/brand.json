@@ -136,21 +136,22 @@
   },
   "voiceover": {
     "provider": "ElevenLabs",
-    "voice": "George",
-    "stability": 45,
-    "similarity": 80,
-    "style": 20,
+    "voice": "Hope - upbeat and clear",
+    "model": "Eleven Multilingual v2",
+    "speed": "max (slider fully right, Faster)",
+    "stability": 50,
+    "similarity": 75,
+    "style": 0,
     "speaker_boost": true,
+    "language_override": false,
+    "output_format": "MP3 44.1 kHz (128kbps)",
+    "_source": "Read directly off Kiian's ElevenLabs Text to Speech panel. Supersedes the earlier George 45/80/20 guess, which was wrong on voice, similarity and style.",
     "acronym_rule": "hyphenate for clean read: C-P-F, A-B-S-D, T-D-S-R, P-S-F, T-O-P, H-D-B, B-T-O",
     "break_tags": {
       "between_scenes": "0.6s",
       "inline_beat": "0.3s"
     },
-    "_note": "45/80/20 is what the last two approved videos used. The older 55/80/5 is kept below for the calmer read.",
-    "calm_variant": {
-      "stability": 55,
-      "style": 5
-    }
+    "_speed_note": "Speed is at maximum, which compresses the rendered <break> gaps below their nominal length. audio_align's silence threshold is set low enough to still catch them."
   },
   "captions_burned": {
     "enabled": true,
