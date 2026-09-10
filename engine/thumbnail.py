@@ -18,6 +18,19 @@ MAX_SIZE = 158
 MIN_SIZE = 34
 HL_PAD = 44
 
+# Vertical rhythm, measured off the 13 approved thumbnails at 2160x3840 and
+# halved to this 1080-base coordinate system. Reference gaps run 60-68px at
+# export scale; the old 11-15px values are what made it look squeezed.
+GAP_HEADER = 33      # header block -> first title line
+GAP_LINE = 32        # between title lines
+HL_PAD_Y = 29        # highlight box padding above and below the cap height
+HL_PAD_X = 26        # highlight box padding left and right
+GAP_PILL = 40        # last title line -> SAVE THIS pill
+PILL_PAD_Y = 22      # pill padding above and below the cap height
+PILL_PAD_X = 44
+BADGE = 74
+HANDLE_SIZE = 32
+
 # Matched against 13 approved thumbnails: header, title, one highlighted line,
 # SAVE THIS pill. No divider, no dots, no kicker, no bottom wordmark.
 DEFAULT_DECOR = {
@@ -92,33 +105,32 @@ def render_thumbnail(repo_root, cfg, title_lines, highlight=(1,), kicker="SINGAP
     # --- measure the centred stack -------------------------------------
     blocks = []
     if dec["kicker"]:
-        kf = ImageFont.truetype(black, 30*S)
-        blocks.append(("kicker", kicker.upper(), kf, (30 + 18)*S))
-    blocks.append(("header", None, None, (74 + 22)*S))
+        kf = ImageFont.truetype(black, 30 * S)
+        blocks.append(("kicker", kicker.upper(), kf, 30 * S + 18 * S))
+    blocks.append(("header", None, None, BADGE * S + GAP_HEADER * S))
     if dec["divider"]:
-        blocks.append(("divider", None, None, (6 + 26)*S))
+        blocks.append(("divider", None, None, 6 * S + 26 * S))
 
     lines = [l.strip().upper() for l in title_lines if l.strip()]
-    tfonts = []
     for i, ln in enumerate(lines):
-        avail = TARGET_W - (HL_PAD if i in hl else 0)
+        avail = TARGET_W - (HL_PAD_X * 2 * S if i in hl else 0)
         f = _fit(d0, ln, black, avail)
-        tfonts.append(f)
-        blocks.append(("tline", ln, f, int(f.size * 0.92) + (15*S if i in hl else 11*S)))
+        bb = d0.textbbox((0, 0), ln, font=f)
+        cap = bb[3] - bb[1]
+        box_h = cap + HL_PAD_Y * 2 * S if i in hl else cap
+        last = (i == len(lines) - 1)
+        blocks.append(("tline", ln, f, box_h + (0 if last else GAP_LINE * S)))
 
     if dec["cta"]:
-        cf = ImageFont.truetype(black, 28*S)
-        blocks.append(("cta", cta.upper(), cf, (28 + 32 + 30)*S))
+        cf = ImageFont.truetype(black, 30 * S)
+        cb = d0.textbbox((0, 0), cta.upper(), font=cf)
+        pill_h = (cb[3] - cb[1]) + PILL_PAD_Y * 2 * S
+        blocks.append(("cta", cta.upper(), cf, GAP_PILL * S + pill_h))
     if dec["dots"]:
-        blocks.append(("dots", None, None, (15 + 34)*S))
+        blocks.append(("dots", None, None, 34 * S + 15 * S))
 
-    trail = {"kicker": 18, "header": 22, "divider": 26, "cta": 30, "dots": 34}
+    # Advances already exclude the trailing gap, so the stack height is exact.
     total = sum(b[3] for b in blocks)
-    last = blocks[-1]
-    if last[0] == "tline":
-        total -= (15 * S if (len(lines) - 1) in hl else 11 * S)
-    else:
-        total -= trail.get(last[0], 0) * S
     y = (H - total) / 2
 
     # --- draw ------------------------------------------------------------
@@ -134,18 +146,18 @@ def render_thumbnail(repo_root, cfg, title_lines, highlight=(1,), kicker="SINGAP
 
         elif kind == "header":
             badge = Image.open(os.path.join(repo_root, cfg["brand"]["badge"])).convert("RGBA")
-            badge = badge.resize((74*S, 74*S), Image.LANCZOS)
-            hf = ImageFont.truetype(black, 32*S)
+            badge = badge.resize((BADGE * S, BADGE * S), Image.LANCZOS)
+            hf = ImageFont.truetype(black, HANDLE_SIZE * S)
             handle = cfg["brand"]["handle"]
-            sp = 0.06 * 32*S
+            sp = 0.06 * HANDLE_SIZE * S
             hw = sum(d.textbbox((0, 0), c, font=hf)[2] + sp for c in handle) - sp
-            tot = 74*S + 18*S + hw
+            tot = BADGE * S + 18 * S + hw
             x = (W - tot) / 2
             img.alpha_composite(badge, (int(x), int(y)))
             d = ImageDraw.Draw(img)
-            x += 74*S + 18*S
+            x += BADGE * S + 18 * S
             for c in handle:
-                d.text((x, y + 20*S), c, font=hf, fill=ink + (255,))
+                d.text((x, y + (BADGE - HANDLE_SIZE) * S / 2 - 2 * S), c, font=hf, fill=ink + (255,))
                 x += d.textbbox((0, 0), c, font=hf)[2] + sp
 
         elif kind == "divider":
@@ -153,22 +165,25 @@ def render_thumbnail(repo_root, cfg, title_lines, highlight=(1,), kicker="SINGAP
 
         elif kind == "tline":
             bb = d.textbbox((0, 0), text, font=f)
-            tw = bb[2] - bb[0]
+            tw, cap = bb[2] - bb[0], bb[3] - bb[1]
             if idx in hl:
-                bx0, bx1 = (W - tw) / 2 - 22*S, (W + tw) / 2 + 22*S
-                d.rectangle([bx0, y - 2*S, bx1, y + f.size + 8*S], fill=box + (255,))
-                d.text(((W - tw) / 2 - bb[0], y - bb[1] + 2*S), text, font=f, fill=(255, 255, 255, 255))
+                bx0, bx1 = (W - tw) / 2 - HL_PAD_X * S, (W + tw) / 2 + HL_PAD_X * S
+                d.rectangle([bx0, y, bx1, y + cap + HL_PAD_Y * 2 * S], fill=box + (255,))
+                d.text(((W - tw) / 2 - bb[0], y + HL_PAD_Y * S - bb[1]), text,
+                       font=f, fill=(255, 255, 255, 255))
             else:
-                d.text(((W - tw) / 2 - bb[0], y - bb[1] + 2*S), text, font=f, fill=ink + (255,))
+                d.text(((W - tw) / 2 - bb[0], y - bb[1]), text, font=f, fill=ink + (255,))
             idx += 1
 
         elif kind == "cta":
             bb = d.textbbox((0, 0), text, font=f)
             tw, th = bb[2] - bb[0], bb[3] - bb[1]
-            pw, ph = tw + 80*S, th + 32*S
-            d.rounded_rectangle([(W - pw) / 2, y, (W + pw) / 2, y + ph],
-                                radius=int(ph / 2), fill=ink + (255,))
-            d.text(((W - tw) / 2 - bb[0], y + 16*S - bb[1]), text, font=f, fill=bg + (255,))
+            pw, ph = tw + PILL_PAD_X * 2 * S, th + PILL_PAD_Y * 2 * S
+            py = y + GAP_PILL * S
+            d.rounded_rectangle([(W - pw) / 2, py, (W + pw) / 2, py + ph],
+                                radius=ph / 2, fill=ink + (255,))
+            d.text(((W - tw) / 2 - bb[0], py + PILL_PAD_Y * S - bb[1]), text,
+                   font=f, fill=bg + (255,))
 
         elif kind == "dots":
             tot = 3 * 15*S + 2 * 18*S
