@@ -124,7 +124,7 @@
     "hook_s": 4,
     "scene_s": 10,
     "cta_s": 6,
-    "_model": "hook 4s + N content scenes at 10s + CTA 6s. Five content scenes = 60s. No-CTA videos run a longer hook and absorb the 6s into the scenes."
+    "_model": "hook 4s + N content scenes at 10s + recap 5s + CTA 6s, then the 5s outro is appended. Narration should cover everything up to the CTA; the outro carries its own audio."
   },
   "audio": {
     "bg_music": "assets/audio/lofi_bg.mp3",
@@ -210,5 +210,14 @@
       "rednote": false
     },
     "voice": "first person agent; 'for example' framing on illustrative figures; hook + reframe only, no point-by-point number breakdowns"
+  },
+  "outro": {
+    "file": "assets/video/outro.mp4",
+    "enabled": true,
+    "duration_s": 5.0,
+    "source_fps": 30,
+    "keep_source_audio": true,
+    "music_under_outro": false,
+    "_note": "Appended to every video. Conformed to the render fps and pixel format before concat so there is no stutter at the join. Its own audio plays; the lo-fi bed fades out before it."
   }
 }
