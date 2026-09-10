@@ -112,9 +112,13 @@
     "progress_x1": 990,
     "progress_gap": 12,
     "progress_h": 7,
-    "content_max_y": 1050,
+    "content_max_y": 1000,
     "side_margin": 90,
-    "_rule": "Scene graphics must bottom out ABOVE content_max_y (1050). Burned captions are centred at caption_y_factor (0.58H = 1114). handle_top_y / handle_bottom_y frame the scene. Point scenes place the icon at icon_cx/icon_cy; hook and CTA use icon_cx_center."
+    "_rule": "Scene graphics bottom out ABOVE content_max_y (1000). caption_clear_zone (1016-1224) is painted flat brand bg every frame so burned captions never sit over blobs, grain or scene art. Captions centre on caption_y_factor (0.58H = 1114), inside that zone.",
+    "caption_clear_zone": [
+      1016,
+      1224
+    ]
   },
   "duration": {
     "hook_s": 4,
@@ -168,7 +172,9 @@
     },
     "pop_in_ms": 120,
     "pop_from": 0.72,
-    "_note": "Approved treatment: warm brown soft shadow, no hard outline, back-out pop. Centred on 0.58H."
+    "_note": "Approved treatment: warm brown soft shadow, no hard outline, back-out pop. Centred on 0.58H.",
+    "offset_ms": 0,
+    "_offset_note": "Global nudge applied to every caption. Negative = captions appear earlier. Adjust in 40ms steps if the read still leads or lags."
   },
   "social_captions": {
     "hashtag_count": 5,
