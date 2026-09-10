@@ -56,13 +56,17 @@ python build.py --topic <slug> --preview --frames 3 5
 
 **Message 3** is approval. Then:
 
-1. Generate the voiceover via the ElevenLabs connector using the locked
-   settings in `config/brand.json` (George, 55/80/5, boost on).
-2. Save the audio to `output/<slug>/narration.mp3` and, if ElevenLabs returns
-   word alignment, `output/<slug>/alignment.json`.
-3. Rewrite scene durations to match the real audio length.
-4. `setsid python build.py --topic <slug> --full > output/<slug>/render.log 2>&1 &`
-5. Poll the log. Present the finished bundle.
+1. **Do NOT touch the ElevenLabs connector.** Kiian records the voiceover
+   himself in the ElevenLabs app. The connector generates onto their canvas
+   and returns a URL, not a file this pipeline can read, and it returns no
+   word-alignment JSON. Calling it burns credits and minutes for nothing.
+   Hand him `narration_script.txt` and move on.
+2. `setsid python build.py --topic <slug> --full > output/<slug>/render.log 2>&1 &`
+3. Poll the log. Present the finished bundle.
+
+If he later drops `narration.mp3` and/or `alignment.json` into
+`output/<slug>/`, re-run `--full`. With alignment the caption timing is exact;
+without it the build prints an APPROXIMATE warning and he syncs in CapCut.
 
 At the end of the session, hand him any engine files you changed plus a commit
 message. You cannot push. If the improvement is not committed it dies here.
