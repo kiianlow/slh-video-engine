@@ -31,7 +31,7 @@ def duration_of(path):
     return float(p.stdout.strip())
 
 
-def find_silences(path, min_gap=0.35, noise_db=-34):
+def find_silences(path, min_gap=0.22, noise_db=-34):
     """Return [(start, end)] of every silent stretch in the narration."""
     p = subprocess.run(
         ["ffmpeg", "-hide_banner", "-i", path,
@@ -125,11 +125,15 @@ def lay_words(audio_path, s0, s1, tokens):
     return out
 
 
-def scene_spans(audio_path, n_scenes, min_gap=0.35, noise_db=-34):
+def scene_spans(audio_path, n_scenes, min_gap=0.22, noise_db=-34):
     """Split the recording into n_scenes spans using the largest silent gaps.
 
     The script writes a 0.6s break between scenes and 0.3s inline, so the
     scene boundaries are the longest gaps. Take the n-1 longest.
+
+    Kiian runs Speed at maximum, which shortens the rendered breaks well below
+    their nominal 0.6s, so the floor here is 0.22s. Picking the longest gaps
+    rather than every gap over a threshold keeps this robust either way.
     """
     total = duration_of(audio_path)
     gaps = find_silences(audio_path, min_gap, noise_db)

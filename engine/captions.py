@@ -162,14 +162,14 @@ def narration_script(scenes, cfg):
     # The break between scenes is load-bearing: build.py silence-detects it to
     # time the video to the recording. Do not remove it from the pasted script.
     header = (
-        f'Voice: {vo["voice"]}  |  Stability {vo["stability"]}  |  '
-        f'Similarity {vo["similarity"]}  |  Style {vo["style"]}  |  '
-        f'Speaker Boost {"ON" if vo["speaker_boost"] else "OFF"}\n'
+        f'Voice:  {vo["voice"]}\n'
+        f'Model:  {vo.get("model", "Eleven Multilingual v2")}\n'
+        f'Speed:  {vo.get("speed", "max")}\n'
+        f'Stability {vo["stability"]}  |  Similarity {vo["similarity"]}  |  '
+        f'Style {vo["style"]}\n'
+        f'Speaker Boost {"ON" if vo["speaker_boost"] else "OFF"}  |  '
+        f'Output {vo.get("output_format", "MP3 44.1 kHz (128kbps)")}\n'
     )
-    alt = vo.get("calm_variant") or vo.get("upbeat_variant")
-    if alt:
-        header += (f'Alt read: Stability {alt.get("stability", vo["stability"])}, '
-                   f'Style {alt.get("style", vo["style"])}\n')
     header += (
         "\nPaste everything below the line into ElevenLabs exactly as it is.\n"
         "Do not delete the <break> tags -- the build reads them to sync the\n"
