@@ -18,10 +18,13 @@ MAX_SIZE = 158
 MIN_SIZE = 34
 HL_PAD = 44
 
+# Matched against 13 approved thumbnails: header, title, one highlighted line,
+# SAVE THIS pill. No divider, no dots, no kicker, no bottom wordmark.
 DEFAULT_DECOR = {
     "divider": False, "dots": False, "frame": False, "corners": False,
-    "kicker": False, "cta": False, "bottom": False, "watermark": False,
+    "kicker": False, "cta": True, "bottom": False, "watermark": False,
 }
+OUT_W, OUT_H = 2160, 3840   # approved export size, measured from the references
 
 
 def _fit(draw, text, fpath, avail):
@@ -109,7 +112,13 @@ def render_thumbnail(repo_root, cfg, title_lines, highlight=(1,), kicker="SINGAP
     if dec["dots"]:
         blocks.append(("dots", None, None, (15 + 34)*S))
 
+    trail = {"kicker": 18, "header": 22, "divider": 26, "cta": 30, "dots": 34}
     total = sum(b[3] for b in blocks)
+    last = blocks[-1]
+    if last[0] == "tline":
+        total -= (15 * S if (len(lines) - 1) in hl else 11 * S)
+    else:
+        total -= trail.get(last[0], 0) * S
     y = (H - total) / 2
 
     # --- draw ------------------------------------------------------------
@@ -181,8 +190,8 @@ def render_thumbnail(repo_root, cfg, title_lines, highlight=(1,), kicker="SINGAP
 
     TARGET_W, MAX_SIZE, MIN_SIZE, HL_PAD = _TW, _MAX, _MIN, _HL
     out = img.convert("RGB")
-    if S > 1:
-        out = out.resize((1080, 1920), Image.LANCZOS)
+    if (W, H) != (OUT_W, OUT_H):
+        out = out.resize((OUT_W, OUT_H), Image.LANCZOS)
     if out_path:
         os.makedirs(os.path.dirname(out_path), exist_ok=True)
         out.save(out_path, quality=95)

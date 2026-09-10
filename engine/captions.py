@@ -94,7 +94,7 @@ class CaptionTrack:
         conf = cfg["captions_burned"]
         if not conf.get("enabled"):
             return img
-        hit = self.active(t)
+        hit = self.active(t - conf.get("offset_ms", 0) / 1000.0)
         if hit is None:
             return img
         word, prog, start = hit

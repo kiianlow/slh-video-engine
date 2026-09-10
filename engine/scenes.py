@@ -491,6 +491,15 @@ def render_frame(repo_root, cfg, mcfg, scene, t_local, t_global, idx, total):
 
     img = _background(cfg, mcfg, W, H, t_global, accent)
 
+    # Flat plate over the caption band so burned captions never sit on top of
+    # drifting blobs, grain or scene art. Painted before anything else draws.
+    cz = cfg["layout"].get("caption_clear_zone")
+    if cz:
+        bgc = mo.hex_to_rgb(cfg["palette"]["video"]["bg"])
+        plate = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        ImageDraw.Draw(plate).rectangle([0, cz[0], W, cz[1]], fill=bgc + (255,))
+        img = Image.alpha_composite(img, plate)
+
     kind = scene.get("type", "point")
     if kind == "hook":
         img = _draw_hook(img, repo_root, cfg, mcfg, scene, t_local, accent)
