@@ -39,13 +39,24 @@ def _fit(draw, text, fpath, avail):
 
 
 def render_thumbnail(repo_root, cfg, title_lines, highlight=(1,), kicker="SINGAPORE PROPERTY",
-                     cta="SAVE THIS", decor=None, out_path=None):
-    W, H = 1080, 1920
+                     cta="SAVE THIS", decor=None, out_path=None, supersample=3):
+    """Rendered at `supersample`x then LANCZOS-downsampled.
+
+    PIL rasterises glyphs at the requested pixel size with no hinting, so a
+    direct 1080x1920 render reads soft next to the browser canvas version.
+    Drawing at 3x and downsampling recovers the edge definition.
+    """
+    S = max(1, int(supersample))
+    W, H = 1080 * S, 1920 * S
     pal = cfg["palette"]["thumbnail"]
     bg, ink, box = (mo.hex_to_rgb(pal["bg"]), mo.hex_to_rgb(pal["ink"]),
                     mo.hex_to_rgb(pal["accent"]))
     black = os.path.join(repo_root, cfg["type"]["headline"]["file"])
     light = os.path.join(repo_root, cfg["type"]["body"]["file"])
+
+    global TARGET_W, MAX_SIZE, MIN_SIZE, HL_PAD
+    _TW, _MAX, _MIN, _HL = TARGET_W, MAX_SIZE, MIN_SIZE, HL_PAD
+    TARGET_W, MAX_SIZE, MIN_SIZE, HL_PAD = _TW * S, _MAX * S, _MIN * S, _HL * S
 
     d0 = ImageDraw.Draw(Image.new("RGB", (10, 10)))
     dec = dict(DEFAULT_DECOR)
@@ -57,17 +68,17 @@ def render_thumbnail(repo_root, cfg, title_lines, highlight=(1,), kicker="SINGAP
 
     if dec["watermark"]:
         badge = Image.open(os.path.join(repo_root, cfg["brand"]["badge"])).convert("RGBA")
-        wm = badge.resize((780, 780), Image.LANCZOS)
+        wm = badge.resize((780*S, 780*S), Image.LANCZOS)
         wm.putalpha(wm.getchannel("A").point(lambda v: int(v * 0.05)))
-        img.alpha_composite(wm, ((W - 780) // 2, (H - 780) // 2))
+        img.alpha_composite(wm, ((W - 780*S) // 2, (H - 780*S) // 2))
         d = ImageDraw.Draw(img)
 
     if dec["frame"]:
-        d.rounded_rectangle([54, 54, W - 54, H - 54], radius=18, outline=box + (255,), width=5)
+        d.rounded_rectangle([54*S, 54*S, W - 54*S, H - 54*S], radius=18*S, outline=box + (255,), width=5*S)
     if dec["corners"]:
-        s, t = 78, 6
-        for cx, cy, hx, hy in ((60, 60, 1, 1), (W - 60 - s, 60, -1, 1),
-                               (60, H - 60 - s, 1, -1), (W - 60 - s, H - 60 - s, -1, -1)):
+        s, t = 78*S, 6*S
+        for cx, cy, hx, hy in ((60*S, 60*S, 1, 1), (W - 60*S - s, 60*S, -1, 1),
+                               (60*S, H - 60*S - s, 1, -1), (W - 60*S - s, H - 60*S - s, -1, -1)):
             x = cx if hx > 0 else cx + s
             y = cy if hy > 0 else cy + s
             d.rectangle([min(x, x + hx * s), y - (t if hy < 0 else 0),
@@ -78,11 +89,11 @@ def render_thumbnail(repo_root, cfg, title_lines, highlight=(1,), kicker="SINGAP
     # --- measure the centred stack -------------------------------------
     blocks = []
     if dec["kicker"]:
-        kf = ImageFont.truetype(black, 30)
-        blocks.append(("kicker", kicker.upper(), kf, 30 + 18))
-    blocks.append(("header", None, None, 74 + 22))
+        kf = ImageFont.truetype(black, 30*S)
+        blocks.append(("kicker", kicker.upper(), kf, (30 + 18)*S))
+    blocks.append(("header", None, None, (74 + 22)*S))
     if dec["divider"]:
-        blocks.append(("divider", None, None, 6 + 26))
+        blocks.append(("divider", None, None, (6 + 26)*S))
 
     lines = [l.strip().upper() for l in title_lines if l.strip()]
     tfonts = []
@@ -90,13 +101,13 @@ def render_thumbnail(repo_root, cfg, title_lines, highlight=(1,), kicker="SINGAP
         avail = TARGET_W - (HL_PAD if i in hl else 0)
         f = _fit(d0, ln, black, avail)
         tfonts.append(f)
-        blocks.append(("tline", ln, f, int(f.size * 0.92) + (15 if i in hl else 11)))
+        blocks.append(("tline", ln, f, int(f.size * 0.92) + (15*S if i in hl else 11*S)))
 
     if dec["cta"]:
-        cf = ImageFont.truetype(black, 28)
-        blocks.append(("cta", cta.upper(), cf, 28 + 32 + 30))
+        cf = ImageFont.truetype(black, 28*S)
+        blocks.append(("cta", cta.upper(), cf, (28 + 32 + 30)*S))
     if dec["dots"]:
-        blocks.append(("dots", None, None, 15 + 34))
+        blocks.append(("dots", None, None, (15 + 34)*S))
 
     total = sum(b[3] for b in blocks)
     y = (H - total) / 2
@@ -114,61 +125,64 @@ def render_thumbnail(repo_root, cfg, title_lines, highlight=(1,), kicker="SINGAP
 
         elif kind == "header":
             badge = Image.open(os.path.join(repo_root, cfg["brand"]["badge"])).convert("RGBA")
-            badge = badge.resize((74, 74), Image.LANCZOS)
-            hf = ImageFont.truetype(black, 32)
+            badge = badge.resize((74*S, 74*S), Image.LANCZOS)
+            hf = ImageFont.truetype(black, 32*S)
             handle = cfg["brand"]["handle"]
-            sp = 0.06 * 32
+            sp = 0.06 * 32*S
             hw = sum(d.textbbox((0, 0), c, font=hf)[2] + sp for c in handle) - sp
-            tot = 74 + 18 + hw
+            tot = 74*S + 18*S + hw
             x = (W - tot) / 2
             img.alpha_composite(badge, (int(x), int(y)))
             d = ImageDraw.Draw(img)
-            x += 74 + 18
+            x += 74*S + 18*S
             for c in handle:
-                d.text((x, y + 20), c, font=hf, fill=ink + (255,))
+                d.text((x, y + 20*S), c, font=hf, fill=ink + (255,))
                 x += d.textbbox((0, 0), c, font=hf)[2] + sp
 
         elif kind == "divider":
-            d.rounded_rectangle([(W - 120) / 2, y, (W + 120) / 2, y + 6], radius=3, fill=box + (255,))
+            d.rounded_rectangle([(W - 120*S) / 2, y, (W + 120*S) / 2, y + 6*S], radius=3*S, fill=box + (255,))
 
         elif kind == "tline":
             bb = d.textbbox((0, 0), text, font=f)
             tw = bb[2] - bb[0]
             if idx in hl:
-                bx0, bx1 = (W - tw) / 2 - 22, (W + tw) / 2 + 22
-                d.rectangle([bx0, y - 2, bx1, y + f.size + 8], fill=box + (255,))
-                d.text(((W - tw) / 2 - bb[0], y - bb[1] + 2), text, font=f, fill=(255, 255, 255, 255))
+                bx0, bx1 = (W - tw) / 2 - 22*S, (W + tw) / 2 + 22*S
+                d.rectangle([bx0, y - 2*S, bx1, y + f.size + 8*S], fill=box + (255,))
+                d.text(((W - tw) / 2 - bb[0], y - bb[1] + 2*S), text, font=f, fill=(255, 255, 255, 255))
             else:
-                d.text(((W - tw) / 2 - bb[0], y - bb[1] + 2), text, font=f, fill=ink + (255,))
+                d.text(((W - tw) / 2 - bb[0], y - bb[1] + 2*S), text, font=f, fill=ink + (255,))
             idx += 1
 
         elif kind == "cta":
             bb = d.textbbox((0, 0), text, font=f)
             tw, th = bb[2] - bb[0], bb[3] - bb[1]
-            pw, ph = tw + 80, th + 32
+            pw, ph = tw + 80*S, th + 32*S
             d.rounded_rectangle([(W - pw) / 2, y, (W + pw) / 2, y + ph],
                                 radius=int(ph / 2), fill=ink + (255,))
-            d.text(((W - tw) / 2 - bb[0], y + 16 - bb[1]), text, font=f, fill=bg + (255,))
+            d.text(((W - tw) / 2 - bb[0], y + 16*S - bb[1]), text, font=f, fill=bg + (255,))
 
         elif kind == "dots":
-            tot = 3 * 15 + 2 * 18
+            tot = 3 * 15*S + 2 * 18*S
             x = (W - tot) / 2
             for _ in range(3):
-                d.ellipse([x, y, x + 15, y + 15], fill=box + (255,))
-                x += 15 + 18
+                d.ellipse([x, y, x + 15*S, y + 15*S], fill=box + (255,))
+                x += 15*S + 18*S
         y += adv
 
     if dec["bottom"]:
-        bf = ImageFont.truetype(light, 26)
+        bf = ImageFont.truetype(light, 26*S)
         name = cfg["brand"]["name"]
-        sp = 0.14 * 26
+        sp = 0.14 * 26*S
         wtot = sum(d.textbbox((0, 0), c, font=bf)[2] + sp for c in name) - sp
         x = (W - wtot) / 2
         for c in name:
-            d.text((x, H - 70 - 26), c, font=bf, fill=ink + (255,))
+            d.text((x, H - 70*S - 26*S), c, font=bf, fill=ink + (255,))
             x += d.textbbox((0, 0), c, font=bf)[2] + sp
 
+    TARGET_W, MAX_SIZE, MIN_SIZE, HL_PAD = _TW, _MAX, _MIN, _HL
     out = img.convert("RGB")
+    if S > 1:
+        out = out.resize((1080, 1920), Image.LANCZOS)
     if out_path:
         os.makedirs(os.path.dirname(out_path), exist_ok=True)
         out.save(out_path, quality=95)
