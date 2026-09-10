@@ -25,7 +25,7 @@ import assemble  # noqa: E402
 import icons  # noqa: E402
 import audio_align  # noqa: E402
 from captions import CaptionTrack, narration_script, write_srt  # noqa: E402
-from scenes import render_frame  # noqa: E402
+from scenes import render_frame, transition  # noqa: E402
 from thumbnail import render_thumbnail  # noqa: E402
 
 
@@ -140,11 +140,24 @@ def do_full(args, cfg, mcfg, topic, scenes):
     total = content_count(scenes)
     print(f"[render] {dur:.1f}s @ {fps}fps = {n} frames | captions: {src}", flush=True)
 
+    T = mcfg["transitions"]
+    ov = T.get("overlap_s", 0.42)
+    styles = T.get("styles", ["push_up"])
+    forced = topic.get("transition")
+
     for f in range(n):
         t = f / fps
         i, sc, t_local = scene_at(scenes, t)
         img = render_frame(ROOT, cfg, mcfg, sc, t_local, t, point_index(scenes, i),
                            total, points=pts)
+        # blend out of the previous scene across the overlap
+        if i > 0 and t_local < ov:
+            prev = scenes[i - 1]
+            pimg = render_frame(ROOT, cfg, mcfg, prev,
+                                prev["duration"] + t_local, t,
+                                point_index(scenes, i - 1), total, points=pts)
+            style = forced or styles[(i - 1) % len(styles)]
+            img = transition(pimg, img, t_local / ov, mcfg, style)
         img = track.draw(img, ROOT, cfg, t)
         img.convert("RGB").save(os.path.join(frames, f"f_{f:06d}.png"))
         if f % 300 == 0:
