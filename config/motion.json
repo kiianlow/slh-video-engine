@@ -130,5 +130,32 @@
     "rise_px": 34,
     "easing": "ease_out_cubic",
     "shine_duration_s": 0.8
+  },
+  "texture": {
+    "_comment": "Surface texture layers. All precomputed once and cached, so they cost nothing per frame. 'rotate' picks a different paper per video from the topic slug, which is the cheapest way to stop every video looking identical.",
+    "rotate": true,
+    "styles": [
+      "paper",
+      "linen",
+      "halftone",
+      "speckle",
+      "plain"
+    ],
+    "opacity": {
+      "paper": 0.085,
+      "linen": 0.065,
+      "halftone": 0.055,
+      "speckle": 0.075,
+      "plain": 0.0
+    },
+    "vignette": {
+      "enabled": true,
+      "strength": 0.16,
+      "feather": 0.62
+    },
+    "top_light": {
+      "enabled": true,
+      "strength": 0.07
+    }
   }
 }

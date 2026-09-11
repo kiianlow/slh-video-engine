@@ -132,7 +132,14 @@
     "_volume_note": "10 out of 100 in CapCut = linear gain 0.10. Locked. Ducking under narration is on top of this.",
     "narration_volume": 1.0,
     "fade_in_s": 0.5,
-    "fade_out_s": 1.5
+    "fade_out_s": 1.5,
+    "loudnorm": {
+      "enabled": true,
+      "I": -14,
+      "TP": -1.5,
+      "LRA": 11,
+      "_note": "IG, TikTok and YouTube all normalise to roughly -14 LUFS. Doing it here means the platform does not do it unpredictably to the mix."
+    }
   },
   "voiceover": {
     "provider": "ElevenLabs",
@@ -219,5 +226,11 @@
     "keep_source_audio": true,
     "music_under_outro": false,
     "_note": "Appended to every video. Conformed to the render fps and pixel format before concat so there is no stutter at the join. Its own audio plays; the lo-fi bed fades out before it."
+  },
+  "safe_area": {
+    "respect": true,
+    "tiktok_bottom_px": 420,
+    "tiktok_right_px": 210,
+    "_note": "TikTok and Reels draw their own UI over the video: caption and username along the bottom, action buttons down the right. Anything inside those bands is covered on at least one platform."
   }
 }
