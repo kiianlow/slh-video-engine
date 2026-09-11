@@ -72,10 +72,28 @@ def mux_audio(video, out_path, cfg, repo_root, narration=None, music=True):
         return out_path
 
     if len(tags) == 1:
-        filters.append(f"{tags[0]}anull[aout]")
+        mixed = f"{tags[0]}anull"
     else:
-        filters.append(f"{''.join(tags)}amix=inputs={len(tags)}:"
-                       f"duration=first:dropout_transition=0:normalize=0[aout]")
+        mixed = (f"{''.join(tags)}amix=inputs={len(tags)}:"
+                 f"duration=first:dropout_transition=0:normalize=0")
+
+    ln = a.get("loudnorm", {})
+    if ln.get("enabled"):
+        # IG, TikTok and YouTube all normalise to about -14 LUFS. Doing it here
+        # means the mix lands where intended instead of the platform reshaping it.
+        mixed += (f",loudnorm=I={ln.get('I', -14)}:TP={ln.get('TP', -1.5)}:"
+                  f"LRA={ln.get('LRA', 11)}")
+    filters.append(f"{mixed}[aout]")
+
+    # Normalise to broadcast level. Every ElevenLabs render comes back at a
+    # different loudness, so without this one video is quiet and the next is
+    # hot. -14 LUFS is what Instagram, TikTok and YouTube normalise toward.
+    ln = cfg.get("audio", {}).get("loudnorm", {})
+    if ln.get("enabled", True):
+        filters[-1] = filters[-1].replace("[aout]", "[amix]")
+        filters.append(
+            f"[amix]loudnorm=I={ln.get('target_lufs', -14)}:"
+            f"TP={ln.get('true_peak', -1.5)}:LRA={ln.get('lra', 11)}[aout]")
 
     cmd = ["ffmpeg", "-y"] + inputs + [
         "-filter_complex", ";".join(filters),

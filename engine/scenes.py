@@ -7,6 +7,7 @@ PIL gotcha, learned the hard way: after ANY alpha_composite the old ImageDraw
 handle points at a dead buffer and leaves ghost artifacts. Every composite here
 is followed by a fresh ImageDraw. Do not "optimise" that away.
 """
+import json
 import math
 import os
 
@@ -583,7 +584,8 @@ def _draw_recap(img, repo_root, cfg, mcfg, scene, t_local, accent, points):
 
 # ------------------------------------------------------------------ entry ---
 
-def render_frame(repo_root, cfg, mcfg, scene, t_local, t_global, idx, total, points=None):
+def render_frame(repo_root, cfg, mcfg, scene, t_local, t_global, idx, total,
+                 points=None, texture=None):
     W, H = cfg["canvas"]["width"], cfg["canvas"]["height"]
     accent = scene["accent"]
 
@@ -607,10 +609,126 @@ def render_frame(repo_root, cfg, mcfg, scene, t_local, t_global, idx, total, poi
     img = Image.alpha_composite(img, _particles(cfg, mcfg, W, H, t_global, accent))
     img = _handles(img, repo_root, cfg, W, H)
 
+    # Texture, vignette and top light. All three existed in the codebase but
+    # were never called, so every render came out flat. Style rotates per video
+    # from the topic slug so consecutive videos do not share a paper.
+    for lay in (_texture(W, H, mcfg, texture or "paper"),
+                _top_light(W, H, mcfg),
+                _vignette(W, H, mcfg)):
+        if lay is not None:
+            img = Image.alpha_composite(img, lay)
+
     g = _grain(W, H, mcfg, t_global)
     if g is not None:
         img = Image.alpha_composite(img, g)
     return img
+
+
+# ---------------------------------------------------------------- texture ---
+
+_TEX_CACHE = {}
+
+
+def _texture(W, H, mcfg, style):
+    """Surface texture. Built once per style and reused for every frame.
+
+    Flat brand colour reads cheap on a phone. A little tooth on the surface is
+    what separates this from a slide deck, and because it is static it costs
+    nothing after the first frame.
+    """
+    tc = mcfg.get("texture", {})
+    op = tc.get("opacity", {}).get(style, 0)
+    if op <= 0:
+        return None
+    key = (W, H, style, round(op, 4))
+    if key in _TEX_CACHE:
+        return _TEX_CACHE[key]
+
+    import numpy as np
+    rng = np.random.default_rng(11)
+
+    if style == "paper":
+        # fibre: noise stretched horizontally so it reads as pulp, not static
+        n = rng.integers(0, 256, size=(H // 6, W // 22)).astype("uint8")
+        g = Image.fromarray(n, "L").resize((W, H), Image.BICUBIC)
+        g = g.filter(ImageFilter.GaussianBlur(1.2))
+    elif style == "speckle":
+        n = rng.integers(0, 256, size=(H // 3, W // 3)).astype("uint8")
+        g = Image.fromarray(n, "L").resize((W, H), Image.BICUBIC)
+    elif style == "linen":
+        g = Image.new("L", (W, H), 128)
+        d = ImageDraw.Draw(g)
+        for x in range(0, W, 5):
+            d.line([(x, 0), (x, H)], fill=196, width=1)
+        for y in range(0, H, 5):
+            d.line([(0, y), (W, y)], fill=76, width=1)
+        g = g.filter(ImageFilter.GaussianBlur(0.8))
+    elif style == "halftone":
+        g = Image.new("L", (W, H), 128)
+        d = ImageDraw.Draw(g)
+        step, r = 14, 3
+        for row, y in enumerate(range(0, H + step, step)):
+            off = (step // 2) if row % 2 else 0
+            for x in range(-step, W + step, step):
+                d.ellipse([x + off - r, y - r, x + off + r, y + r], fill=205)
+        g = g.filter(ImageFilter.GaussianBlur(1.4))
+    else:
+        return None
+
+    # centre the texture on mid-grey so it lightens and darkens equally
+    arr = np.asarray(g).astype("int16") - 128
+    a = np.clip(np.abs(arr) * (op * 2), 0, 255).astype("uint8")
+    rgbv = np.where(arr[..., None] > 0, 255, 40).astype("uint8")
+    rgba = np.dstack([np.repeat(rgbv, 3, axis=2), a])
+    layer = Image.fromarray(rgba, "RGBA")
+    _TEX_CACHE[key] = layer
+    return layer
+
+
+def _vignette(W, H, mcfg):
+    tc = mcfg.get("texture", {}).get("vignette", {})
+    if not tc.get("enabled"):
+        return None
+    key = (W, H, "vig", tc.get("strength"))
+    if key in _TEX_CACHE:
+        return _TEX_CACHE[key]
+    import numpy as np
+    yy, xx = np.mgrid[0:H, 0:W]
+    cx, cy = W / 2, H / 2
+    r = np.sqrt(((xx - cx) / cx) ** 2 + ((yy - cy) / cy) ** 2)
+    f = np.clip((r - tc.get("feather", 0.62)) / (1.45 - tc.get("feather", 0.62)), 0, 1)
+    a = (f * 255 * tc.get("strength", 0.16)).astype("uint8")
+    layer = Image.fromarray(np.dstack([
+        np.full((H, W), 62, "uint8"), np.full((H, W), 44, "uint8"),
+        np.full((H, W), 30, "uint8"), a]), "RGBA")
+    _TEX_CACHE[key] = layer
+    return layer
+
+
+def _top_light(W, H, mcfg):
+    tc = mcfg.get("texture", {}).get("top_light", {})
+    if not tc.get("enabled"):
+        return None
+    key = (W, H, "toplight", tc.get("strength"))
+    if key in _TEX_CACHE:
+        return _TEX_CACHE[key]
+    import numpy as np
+    yy = np.linspace(1.0, 0.0, H)[:, None] ** 2
+    a = np.repeat((yy * 255 * tc.get("strength", 0.07)).astype("uint8"), W, axis=1)
+    layer = Image.fromarray(np.dstack([
+        np.full((H, W), 255, "uint8")] * 3 + [a]), "RGBA")
+    _TEX_CACHE[key] = layer
+    return layer
+
+
+def texture_for(slug, mcfg):
+    """Pick this video's paper from its slug, so it is stable across re-renders
+    but different from the last video."""
+    tc = mcfg.get("texture", {})
+    styles = tc.get("styles", ["paper"])
+    if not tc.get("rotate", True):
+        return styles[0]
+    return styles[sum(ord(c) for c in slug) % len(styles)]
 
 
 # ------------------------------------------------------------ transitions ---
