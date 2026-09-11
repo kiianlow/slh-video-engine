@@ -16,6 +16,8 @@ import motion as mo
 
 
 class CaptionTrack:
+    _chunks = None
+
     def __init__(self, words, approximate=False):
         # words: [(text, start_s, end_s), ...]
         self.words = words
@@ -84,6 +86,46 @@ class CaptionTrack:
         return cls(words, approximate=True)
 
     # ------------------------------------------------------------- render --
+    def chunks(self, conf):
+        """Group words so fast speech stays readable.
+
+        A word lasting 0.15s flashes, and at that length a 60ms timing error is
+        obvious. Grouping into short phrases means the text is on screen long
+        enough to read, while the active-word highlight keeps it word-for-word.
+        """
+        if getattr(self, "_chunks", None) is not None:
+            return self._chunks
+        mx = conf.get("max_words", 3)
+        lo = conf.get("min_chunk_s", 0.42)
+        hi = conf.get("max_chunk_s", 1.9)
+        out, cur = [], []
+        for w in self.words:
+            cur.append(w)
+            span = cur[-1][2] - cur[0][1]
+            ends_clause = w[0].rstrip().endswith((".", ",", "?", "!", ":", ";"))
+            sentence_end = w[0].rstrip().endswith((".", "?", "!"))
+            if sentence_end or len(cur) >= mx or span >= hi or (span >= lo and ends_clause):
+                out.append(cur)
+                cur = []
+        if cur:
+            if out and (cur[-1][2] - cur[0][1]) < lo * 0.6 and len(out[-1]) < mx + 1:
+                out[-1].extend(cur)
+            else:
+                out.append(cur)
+        # absorb any chunk still too brief into its neighbour
+        merged = []
+        for c in out:
+            prev_ends_sentence = (merged and
+                                  merged[-1][-1][0].rstrip().endswith((".", "?", "!")))
+            if (merged and not prev_ends_sentence
+                    and (c[-1][2] - c[0][1]) < lo
+                    and len(merged[-1]) + len(c) <= mx + 1):
+                merged[-1].extend(c)
+            else:
+                merged.append(c)
+        self._chunks = merged
+        return merged
+
     def active(self, t):
         for w, s, e in self.words:
             if s <= t < e:
@@ -94,53 +136,90 @@ class CaptionTrack:
         conf = cfg["captions_burned"]
         if not conf.get("enabled"):
             return img
-        hit = self.active(t - conf.get("offset_ms", 0) / 1000.0)
+        tt = t - conf.get("offset_ms", 0) / 1000.0
+
+        chunks = self.chunks(conf)
+        hit = None
+        for c in chunks:
+            if c[0][1] <= tt < c[-1][2]:
+                hit = c
+                break
         if hit is None:
             return img
-        word, prog, start = hit
 
         W, H = img.size
-        size = conf["size"]
         fpath = os.path.join(repo_root, cfg["type"][conf["font"]]["file"])
-        text = word.upper() if conf["case"] == "upper" else word
-        text = text.strip(",.;:!?")
-        if not text:
-            return img
-        f = ImageFont.truetype(fpath, size)
-        maxw = conf.get("max_width", 930)
-        minsz = conf.get("min_size", 56)
-        while size > minsz and ImageDraw.Draw(img).textbbox((0, 0), text, font=f)[2] > maxw:
-            size -= 2
-            f = ImageFont.truetype(fpath, size)
+        upper = conf.get("case") == "upper"
 
-        pop = max(0.0, min(1.0, mo.window(t, start, conf["pop_in_ms"], "back_out")))
+        def clean(w):
+            w = w.strip(",.;:!?")
+            return w.upper() if upper else w
+
+        words = [clean(w[0]) for w in hit]
+        words = [w for w in words if w]
+        if not words:
+            return img
+
+        size = conf["size"]
+        maxw = conf.get("max_width", 930)
+        minsz = conf.get("min_size", 46)
+        d0 = ImageDraw.Draw(img)
+        f = ImageFont.truetype(fpath, size)
+        gap = int(size * 0.30)
+        while size > minsz:
+            f = ImageFont.truetype(fpath, size)
+            gap = int(size * 0.30)
+            total = sum(d0.textbbox((0, 0), w, font=f)[2] for w in words) + gap * (len(words) - 1)
+            if total <= maxw:
+                break
+            size -= 2
+
+        widths = [d0.textbbox((0, 0), w, font=f)[2] for w in words]
+        total = sum(widths) + gap * (len(words) - 1)
+        asc, desc = f.getmetrics()
+        th = asc + desc
+
+        start = hit[0][1]
+        pop = max(0.0, min(1.0, mo.window(tt, start, conf["pop_in_ms"], "back_out")))
         scale = mo.lerp(conf.get("pop_from", 0.72), 1.0, pop)
 
-        d0 = ImageDraw.Draw(img)
-        bb = d0.textbbox((0, 0), text, font=f)
-        tw, th = bb[2] - bb[0], bb[3] - bb[1]
-        cx = W / 2
-        cy = H * cfg["layout"]["caption_y_factor"]
-
-        pad = 40
-        layer = Image.new("RGBA", (int(tw + pad * 2), int(th + pad * 2)), (0, 0, 0, 0))
-        ld = ImageDraw.Draw(layer)
+        # which word is being spoken right now
+        live = -1
+        for i, w in enumerate(hit):
+            if w[1] <= tt < w[2]:
+                live = i
+                break
+        if live < 0:
+            live = len(hit) - 1
 
         sh = conf["shadow"]
-        shadow_rgb = mo.hex_to_rgb(sh.get("color", "#463428"))
-        ld.text((pad - bb[0], pad - bb[1]), text, font=f,
-                fill=shadow_rgb + (int(255 * sh["opacity"]),))
+        pad = 46
+        layer = Image.new("RGBA", (int(total + pad * 2), int(th + pad * 2)), (0, 0, 0, 0))
+        ld = ImageDraw.Draw(layer)
+        x = pad
+        for i, w in enumerate(words):
+            ld.text((x, pad), w, font=f, fill=(0, 0, 0, int(255 * sh["opacity"])))
+            x += widths[i] + gap
         layer = layer.filter(ImageFilter.GaussianBlur(sh["blur"]))
         ld = ImageDraw.Draw(layer)
-        ld.text((pad - bb[0], pad - bb[1]), text, font=f, fill=(255, 255, 255, 255))
+
+        dim = int(255 * conf.get("inactive_opacity", 0.38))
+        x = pad
+        for i, w in enumerate(words):
+            on = (i == live) or not conf.get("active_word", True)
+            ld.text((x, pad), w, font=f, fill=(255, 255, 255, 255 if on else dim))
+            x += widths[i] + gap
 
         if scale != 1.0:
             layer = layer.resize((max(2, int(layer.width * scale)),
                                   max(2, int(layer.height * scale))), Image.LANCZOS)
 
+        cx = W / 2
+        cy = H * cfg["layout"]["caption_y_factor"]
         img.alpha_composite(layer, (int(cx - layer.width / 2),
                                     int(cy - layer.height / 2 + sh["offset"][1])))
         return img
+
 
 
 def narration_script(scenes, cfg):
