@@ -162,7 +162,7 @@
   },
   "captions_burned": {
     "enabled": true,
-    "style": "word_by_word",
+    "style": "chunk",
     "font": "headline",
     "case": "upper",
     "color": "#FFFFFF",
@@ -182,7 +182,13 @@
     "pop_from": 0.72,
     "_note": "Approved treatment: warm brown soft shadow, no hard outline, back-out pop. Centred on 0.58H.",
     "offset_ms": 0,
-    "_offset_note": "Global nudge applied to every caption. Negative = captions appear earlier. Adjust in 40ms steps if the read still leads or lags."
+    "_offset_note": "Global nudge applied to every caption. Negative = captions appear earlier. Adjust in 40ms steps if the read still leads or lags.",
+    "max_words": 3,
+    "min_chunk_s": 0.42,
+    "max_chunk_s": 1.9,
+    "active_word": true,
+    "inactive_opacity": 0.38,
+    "_chunk_note": "Single words flash and make any timing error obvious. Words are grouped into chunks of up to 3 that stay up for at least min_chunk_s, and the word currently being spoken is held at full white while the rest of the chunk sits back. Still word-for-word, just readable at speed."
   },
   "social_captions": {
     "hashtag_count": 5,

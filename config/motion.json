@@ -157,5 +157,20 @@
       "enabled": true,
       "strength": 0.07
     }
+  },
+  "camera": {
+    "enabled": true,
+    "_note": "Slow move on the scene art only. Handles, texture and vignette stay locked so the frame reads as a camera on a surface, not a wobbling picture. Styles rotate per scene so a 6-scene video never repeats a move.",
+    "styles": [
+      "push_in",
+      "pull_out",
+      "drift_left",
+      "drift_right",
+      "drift_up",
+      "settle"
+    ],
+    "max_zoom": 0.045,
+    "max_drift_px": 26,
+    "settle_overshoot": 0.018
   }
 }
