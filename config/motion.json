@@ -172,5 +172,143 @@
     "max_zoom": 0.045,
     "max_drift_px": 26,
     "settle_overshoot": 0.018
+  },
+  "moods": {
+    "_comment": "A scene's mood drives its transition, camera, icon motion and accent together, so the visuals follow what is being said. Each field is a list: repeats of the same mood step through it by scene position, so three money scenes in a row do not come out identical. Set 'mood' on a scene in the topic file.",
+    "reveal": {
+      "transition": [
+        "zoom_through",
+        "push_up"
+      ],
+      "camera": [
+        "push_in",
+        "settle"
+      ],
+      "icon_move": [
+        "zoom_punch",
+        "barrel_roll"
+      ],
+      "accent": "gold",
+      "use": "the thing nobody tells you, the twist, the surprising number"
+    },
+    "warning": {
+      "transition": [
+        "slide_side",
+        "wipe_across"
+      ],
+      "camera": [
+        "settle",
+        "drift_right"
+      ],
+      "icon_move": [
+        "tilt_shake",
+        "swing_in"
+      ],
+      "accent": "terracotta",
+      "use": "mistakes, risks, penalties, what catches people out"
+    },
+    "money": {
+      "transition": [
+        "push_up",
+        "zoom_through",
+        "wipe_across"
+      ],
+      "camera": [
+        "drift_up",
+        "push_in",
+        "drift_left"
+      ],
+      "icon_move": [
+        "coin_flip",
+        "spin360",
+        "zoom_punch"
+      ],
+      "accent": "gold",
+      "use": "costs, stamp duty, CPF, downpayment, any hard number"
+    },
+    "compare": {
+      "transition": [
+        "wipe_across",
+        "slide_side"
+      ],
+      "camera": [
+        "drift_left",
+        "drift_right"
+      ],
+      "icon_move": [
+        "card_flip",
+        "pendulum"
+      ],
+      "accent": "dusty_blue",
+      "use": "A versus B, resale versus BTO, this or that"
+    },
+    "momentum": {
+      "transition": [
+        "zoom_through",
+        "push_up"
+      ],
+      "camera": [
+        "push_in",
+        "drift_up"
+      ],
+      "icon_move": [
+        "rise_glow",
+        "zoom_punch"
+      ],
+      "accent": "sage",
+      "use": "growth, appreciation, upside, things trending up"
+    },
+    "calm": {
+      "transition": [
+        "dissolve_glow",
+        "push_up"
+      ],
+      "camera": [
+        "pull_out",
+        "drift_right"
+      ],
+      "icon_move": [
+        "float_bob",
+        "pendulum"
+      ],
+      "accent": "teal",
+      "use": "definitions, explanations, steady context"
+    },
+    "urgent": {
+      "transition": [
+        "slide_side",
+        "zoom_through"
+      ],
+      "camera": [
+        "push_in",
+        "settle"
+      ],
+      "icon_move": [
+        "heartbeat",
+        "tilt_shake"
+      ],
+      "accent": "terracotta",
+      "use": "deadlines, MOP dates, launch windows, timing pressure"
+    },
+    "close": {
+      "transition": [
+        "dissolve_glow"
+      ],
+      "camera": [
+        "pull_out"
+      ],
+      "icon_move": [
+        "pendulum",
+        "float_bob"
+      ],
+      "accent": "terracotta",
+      "use": "recap and CTA scenes"
+    }
+  },
+  "mood_defaults": {
+    "hook": "reveal",
+    "point": null,
+    "recap": "calm",
+    "cta": "close"
   }
 }
