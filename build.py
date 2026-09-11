@@ -78,6 +78,19 @@ def recap_points(topic, scenes):
             for sc in scenes if sc.get("type", "point") == "point"]
 
 
+def camera_style(topic, scenes, i, mcfg):
+    """One move per scene, rotated so a six-scene video never repeats."""
+    c = mcfg.get("camera", {})
+    if not c.get("enabled"):
+        return None
+    if scenes[i].get("camera"):
+        return scenes[i]["camera"]
+    if topic.get("camera") == "none":
+        return None
+    st = c.get("styles", ["push_in"])
+    return st[i % len(st)]
+
+
 def texture_style(topic, slug, mcfg):
     """Pick this video's paper. Rotating by slug means two videos made on the
     same day do not share a surface, without anyone choosing one."""
@@ -203,7 +216,8 @@ def do_full(args, cfg, mcfg, topic, scenes):
         # almost empty frame. Render the opening frame settled instead.
         tl = 0.9 if f == 0 else t_local
         img = render_frame(ROOT, cfg, mcfg, sc, tl, t, point_index(scenes, i),
-                           total, points=pts, texture=tex)
+                           total, points=pts, texture=tex,
+                           camera=camera_style(topic, scenes, i, mcfg))
         # blend out of the previous scene across the overlap
         if i > 0 and t_local < ov:
             prev = scenes[i - 1]
