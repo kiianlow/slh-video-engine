@@ -24,6 +24,7 @@ from PIL import Image  # noqa: E402
 import assemble  # noqa: E402
 import icons  # noqa: E402
 import audio_align  # noqa: E402
+import icons as icons_mod  # noqa: E402
 from captions import CaptionTrack, narration_script, write_srt  # noqa: E402
 from scenes import render_frame, transition  # noqa: E402
 from thumbnail import render_thumbnail  # noqa: E402
@@ -40,6 +41,34 @@ def load_topic(slug):
         return json.load(f)
 
 
+def validate(topic, scenes, cfg):
+    """Catch the mistakes that would otherwise surface 9 minutes into a render."""
+    problems, warnings = [], []
+    manifest = icons_mod.load_manifest(ROOT)["icons"]
+    moves = set(json.load(open(os.path.join(ROOT, "config", "motion.json")))
+                ["icon_moves"]["options"])
+    for i, sc in enumerate(scenes, 1):
+        k = sc.get("icon")
+        if k and k not in manifest:
+            problems.append(f"scene {i}: icon '{k}' is not in config/icons.json")
+        mv = sc.get("icon_move")
+        if mv and mv not in moves:
+            problems.append(f"scene {i}: icon_move '{mv}' is not a known move")
+        if sc.get("type", "point") != "recap" and not sc.get("headline"):
+            problems.append(f"scene {i}: no headline")
+        if len(sc.get("headline", "")) > 42:
+            warnings.append(f"scene {i}: headline is {len(sc['headline'])} chars, "
+                            "it will shrink to fit")
+    if not any(s.get("type") == "cta" for s in scenes):
+        warnings.append("no CTA scene")
+    if not any(s.get("type") == "recap" for s in scenes):
+        warnings.append("no recap scene, the ending will feel abrupt")
+    dur = total_duration(scenes)
+    if dur > 75:
+        warnings.append(f"{dur:.0f}s before the outro, longer than the 60s target")
+    return problems, warnings
+
+
 def recap_points(topic, scenes):
     """Headlines of the content scenes, for the closing checklist."""
     custom = topic.get("recap_points")
@@ -47,6 +76,18 @@ def recap_points(topic, scenes):
         return custom
     return [sc.get("sub") or sc.get("headline", "")
             for sc in scenes if sc.get("type", "point") == "point"]
+
+
+def texture_style(topic, slug, mcfg):
+    """Pick this video's paper. Rotating by slug means two videos made on the
+    same day do not share a surface, without anyone choosing one."""
+    tc = mcfg.get("texture", {})
+    if topic.get("texture"):
+        return topic["texture"]
+    styles = tc.get("styles", ["paper"])
+    if not tc.get("rotate", True):
+        return styles[0]
+    return styles[sum(ord(c) for c in slug) % len(styles)]
 
 
 def prepare(topic, cfg):
@@ -88,7 +129,10 @@ def point_index(scenes, i):
 # ---------------------------------------------------------------- actions ---
 
 def do_preview(args, cfg, mcfg, topic, scenes):
+    from scenes import texture_for
+    cfg2 = mcfg
     pts = recap_points(topic, scenes)
+    tex = texture_style(topic, args.topic, mcfg)
     out = os.path.join(ROOT, "output", args.topic, "preview")
     os.makedirs(out, exist_ok=True)
     want = set(args.frames) if args.frames else None
@@ -99,7 +143,8 @@ def do_preview(args, cfg, mcfg, topic, scenes):
         if want is None or (i + 1) in want:
             t_local = min(sc["duration"] * 0.55, sc["duration"] - 0.1)
             img = render_frame(ROOT, cfg, mcfg, sc, t_local, clock + t_local,
-                               point_index(scenes, i), total, points=pts)
+                               point_index(scenes, i), total, points=pts,
+                               texture=topic.get("texture") or texture_for(args.topic, cfg2))
             p = os.path.join(out, f"scene_{i + 1:02d}_{sc.get('type', 'point')}.png")
             img.convert("RGB").save(p)
             made.append(p)
@@ -135,10 +180,15 @@ def do_full(args, cfg, mcfg, topic, scenes):
         src = "auto-distributed from script (APPROXIMATE - no narration.mp3)"
 
     pts = recap_points(topic, scenes)
+    tex = texture_style(topic, args.topic, mcfg)
     dur = total_duration(scenes)
     n = int(round(dur * fps))
     total = content_count(scenes)
     print(f"[render] {dur:.1f}s @ {fps}fps = {n} frames | captions: {src}", flush=True)
+
+    from scenes import texture_for
+    tex = topic.get("texture") or texture_for(args.topic, mcfg)
+    print(f"[texture] {tex}", flush=True)
 
     T = mcfg["transitions"]
     ov = T.get("overlap_s", 0.42)
@@ -148,14 +198,19 @@ def do_full(args, cfg, mcfg, topic, scenes):
     for f in range(n):
         t = f / fps
         i, sc, t_local = scene_at(scenes, t)
-        img = render_frame(ROOT, cfg, mcfg, sc, t_local, t, point_index(scenes, i),
-                           total, points=pts)
+        # Frame 0 is what the feed grabs as a preview, and at t=0 every
+        # entrance animation is still at zero opacity, so it was showing an
+        # almost empty frame. Render the opening frame settled instead.
+        tl = 0.9 if f == 0 else t_local
+        img = render_frame(ROOT, cfg, mcfg, sc, tl, t, point_index(scenes, i),
+                           total, points=pts, texture=tex)
         # blend out of the previous scene across the overlap
         if i > 0 and t_local < ov:
             prev = scenes[i - 1]
             pimg = render_frame(ROOT, cfg, mcfg, prev,
                                 prev["duration"] + t_local, t,
-                                point_index(scenes, i - 1), total, points=pts)
+                                point_index(scenes, i - 1), total, points=pts,
+                                texture=tex)
             style = forced or styles[(i - 1) % len(styles)]
             img = transition(pimg, img, t_local / ov, mcfg, style)
         img = track.draw(img, ROOT, cfg, t)
@@ -248,6 +303,14 @@ def main():
     cfg, mcfg = load("brand.json"), load("motion.json")
     topic = load_topic(args.topic)
     scenes = prepare(topic, cfg)
+
+    probs, warns = validate(topic, scenes, cfg)
+    for w in warns:
+        print("  ! ", w)
+    if probs:
+        for p_ in probs:
+            print("  FAIL", p_)
+        sys.exit("\nFix the above before rendering; a full render takes ~9 minutes.")
 
     if not any([args.preview, args.full, args.thumbnail, args.captions, args.all]):
         args.preview = True
