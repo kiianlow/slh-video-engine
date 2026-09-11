@@ -78,6 +78,32 @@ def recap_points(topic, scenes):
             for sc in scenes if sc.get("type", "point") == "point"]
 
 
+def scene_mood(topic, scenes, i, mcfg):
+    """A scene's mood, explicit or defaulted by scene type."""
+    sc = scenes[i]
+    if sc.get("mood"):
+        return sc["mood"]
+    if topic.get("mood") and sc.get("type", "point") == "point":
+        return topic["mood"]
+    return (mcfg.get("mood_defaults", {}) or {}).get(sc.get("type", "point"))
+
+
+def mood_spec(mood, mcfg, i=0):
+    """Resolve a mood to concrete settings.
+
+    Each field may be a list. Repeats of the same mood step through it by scene
+    position, so three money scenes running back to back do not render
+    identically -- which was the whole point of moods.
+    """
+    spec = (mcfg.get("moods", {}) or {}).get(mood) or {}
+    out = {}
+    for k, v in spec.items():
+        if k.startswith("_") or k == "use":
+            continue
+        out[k] = v[i % len(v)] if isinstance(v, list) and v else v
+    return out
+
+
 def camera_style(topic, scenes, i, mcfg):
     """One move per scene, rotated so a six-scene video never repeats."""
     c = mcfg.get("camera", {})
@@ -87,6 +113,9 @@ def camera_style(topic, scenes, i, mcfg):
         return scenes[i]["camera"]
     if topic.get("camera") == "none":
         return None
+    spec = mood_spec(scene_mood(topic, scenes, i, mcfg), mcfg, i)
+    if spec.get("camera"):
+        return spec["camera"]
     st = c.get("styles", ["push_in"])
     return st[i % len(st)]
 
@@ -101,6 +130,20 @@ def texture_style(topic, slug, mcfg):
     if not tc.get("rotate", True):
         return styles[0]
     return styles[sum(ord(c) for c in slug) % len(styles)]
+
+
+def apply_moods(topic, scenes, cfg, mcfg):
+    """Let mood set icon motion and accent where the scene has not said."""
+    byname = {a["name"]: a["hex"] for a in cfg["palette"]["accent_rotation"]}
+    for i, sc in enumerate(scenes):
+        spec = mood_spec(scene_mood(topic, scenes, i, mcfg), mcfg, i)
+        if not spec:
+            continue
+        if "icon_move" not in sc and spec.get("icon_move"):
+            sc["icon_move"] = spec["icon_move"]
+        if "accent" not in sc and spec.get("accent") in byname:
+            sc["accent"] = byname[spec["accent"]]
+    return scenes
 
 
 def prepare(topic, cfg):
@@ -225,7 +268,9 @@ def do_full(args, cfg, mcfg, topic, scenes):
                                 prev["duration"] + t_local, t,
                                 point_index(scenes, i - 1), total, points=pts,
                                 texture=tex)
-            style = forced or styles[(i - 1) % len(styles)]
+            # the incoming scene's mood chooses how we arrive at it
+            mspec = mood_spec(scene_mood(topic, scenes, i, mcfg), mcfg, i)
+            style = forced or mspec.get("transition") or styles[(i - 1) % len(styles)]
             img = transition(pimg, img, t_local / ov, mcfg, style)
         img = track.draw(img, ROOT, cfg, t)
         img.convert("RGB").save(os.path.join(frames, f"f_{f:06d}.png"))
@@ -316,6 +361,8 @@ def main():
 
     cfg, mcfg = load("brand.json"), load("motion.json")
     topic = load_topic(args.topic)
+    scenes = topic["scenes"]
+    apply_moods(topic, scenes, cfg, mcfg)   # before prepare, so accents stick
     scenes = prepare(topic, cfg)
 
     probs, warns = validate(topic, scenes, cfg)

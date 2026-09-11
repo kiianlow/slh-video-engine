@@ -102,6 +102,28 @@ The `recap` scene type replays the content scenes as a short checklist so the
 video closes properly. Narration covers everything up to the CTA; the outro
 carries its own audio.
 
+## Give every scene a mood
+
+Set `mood` on each scene in the topic file. It drives the transition into that
+scene, its camera move, its icon motion and its accent colour together, so the
+visuals follow what is being said instead of rotating blindly.
+
+    reveal    the thing nobody tells you, the twist, the surprising number
+    warning   mistakes, risks, penalties, what catches people out
+    money     costs, stamp duty, CPF, downpayment, any hard number
+    compare   A versus B, resale versus BTO, this or that
+    momentum  growth, appreciation, upside, things trending up
+    calm      definitions, explanations, steady context
+    urgent    deadlines, MOP dates, launch windows, timing pressure
+    close     recap and CTA scenes
+
+Hook defaults to `reveal`, recap to `calm`, CTA to `close`. Points have no
+default -- choose one per scene. Each mood holds several variants and repeats
+step through them, so three `money` scenes in a row still differ.
+
+Accent is deliberately constant per mood. That colour coding is doing work:
+gold always means a number, terracotta always means watch out.
+
 ## Hard rules
 
 **No red anywhere.** Six icons in the pack contain red. `icons.py` recolours
